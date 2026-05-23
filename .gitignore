@@ -1,41 +1,28 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Builds Android
+app/build/
+*.apk
+*.aab
 
-# dependencies
-node_modules/
+# Modèles IA (trop lourds pour Git)
+app/src/main/assets/vosk-model-*/
+app/src/main/assets/*.tflite
 
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
+# Datasets (stockés séparément)
+data/vision/datasets/
+data/speech/fr_accents/
+data/speech/en_accents/
+data/nlp/datasets/
 
-# Native
-.kotlin/
-*.orig.*
+# Environnement Python
+voxia-env/
+__pycache__/
+*.pyc
+
+# Android Studio
+.idea/
+*.iml
+local.properties
+
+# Clés privées
 *.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
+keystore.properties
