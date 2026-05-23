@@ -7,11 +7,18 @@ app/build/
 app/src/main/assets/vosk-model-*/
 app/src/main/assets/*.tflite
 
-# Datasets (stockés séparément)
-data/vision/datasets/
-data/speech/fr_accents/
-data/speech/en_accents/
-data/nlp/datasets/
+# Datasets - ignore le contenu MAIS garde les dossiers
+data/vision/datasets/*
+!data/vision/datasets/.gitkeep
+
+data/speech/fr_accents/*
+!data/speech/fr_accents/.gitkeep
+
+data/speech/en_accents/*
+!data/speech/en_accents/.gitkeep
+
+data/nlp/datasets/*
+!data/nlp/datasets/.gitkeep
 
 # Environnement Python
 voxia-env/
