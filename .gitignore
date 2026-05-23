@@ -17,8 +17,10 @@ data/speech/fr_accents/*
 data/speech/en_accents/*
 !data/speech/en_accents/.gitkeep
 
-data/nlp/datasets/*
-!data/nlp/datasets/.gitkeep
+data/nlp/datasets/*.zip
+data/nlp/datasets/*.csv
+data/nlp/datasets/*.tar.gz
+data/nlp/datasets/*.gz
 
 # Environnement Python
 voxia-env/
