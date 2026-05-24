@@ -1,54 +1,42 @@
 package com.voxia.brain
 
-// Mapping intention → action à exécuter
 object IntentMapper {
 
     fun execute(result: PredictionResult, context: VoxiaContext) {
-        
+
         // Vérifier le seuil de confiance
         if (result.confidence < 0.70f) {
-            context.speak(
-                fr = "Pouvez-vous répéter s'il vous plaît ?",
-                en = "Could you please repeat ?"
-            )
+            val response = VoxiaResponses.lowConfidence(result.language)
+            context.speak(fr = response.first, en = response.second)
             return
         }
 
         when (result.intent) {
 
             Intent.IDENTIFY_OBJECT -> {
-                // Déclenche le module Vision (Dev1)
                 context.loadVisionModule()
                 context.captureAndIdentify()
             }
 
             Intent.READ_DOCUMENT -> {
-                // Déclenche OCR ML Kit (Dev3)
                 context.loadOcrModule()
                 context.captureAndRead()
             }
 
             Intent.CALL_CONTACT -> {
-                // Déclenche appel Android (Dev4)
                 context.makeCall(result.extractedContact)
             }
 
             Intent.SWITCH_TO_ENGLISH -> {
-                // Change modèle STT (Dev2)
                 context.switchLanguage(Language.ENGLISH)
-                context.speak(
-                    fr = "Langue changée vers l'anglais",
-                    en = "Language switched to English"
-                )
+                val response = VoxiaResponses.switchedToEnglish()
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.SWITCH_TO_FRENCH -> {
-                // Change modèle STT (Dev2)
                 context.switchLanguage(Language.FRENCH)
-                context.speak(
-                    fr = "Langue changée vers le français",
-                    en = "Langue changée vers le français"
-                )
+                val response = VoxiaResponses.switchedToFrench()
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.SET_ALARM -> {
@@ -80,11 +68,13 @@ object IntentMapper {
             }
 
             Intent.TELL_STORY -> {
-                context.tellStory(result.language)
+                val response = VoxiaResponses.story(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.TELL_JOKE -> {
-                context.tellJoke(result.language)
+                val response = VoxiaResponses.joke(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.DESCRIBE_SURROUNDINGS -> {
@@ -105,10 +95,8 @@ object IntentMapper {
             }
 
             Intent.GREETING -> {
-                context.speak(
-                    fr = "Bonjour ! Comment puis-je vous aider ?",
-                    en = "Hello ! How can I help you ?"
-                )
+                val response = VoxiaResponses.greeting(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.REPEAT -> {
@@ -116,29 +104,29 @@ object IntentMapper {
             }
 
             Intent.STOP -> {
+                val response = VoxiaResponses.stop(result.language)
+                context.speak(fr = response.first, en = response.second)
                 context.stopAll()
             }
 
             Intent.HELP -> {
-                context.speakHelp()
+                val response = VoxiaResponses.help(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.TELL_MOTIVATIONAL -> {
-                context.tellMotivational(result.language)
+                val response = VoxiaResponses.motivational(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.WHO_ARE_YOU -> {
-                context.speak(
-                    fr = "Je suis VOXIA, votre assistant vocal offline.",
-                    en = "I am VOXIA, your offline voice assistant."
-                )
+                val response = VoxiaResponses.whoAreYou(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
 
             Intent.FALLBACK -> {
-                context.speak(
-                    fr = "Je n'ai pas compris. Pouvez-vous répéter ?",
-                    en = "I did not understand. Could you repeat ?"
-                )
+                val response = VoxiaResponses.fallback(result.language)
+                context.speak(fr = response.first, en = response.second)
             }
         }
     }
