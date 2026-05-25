@@ -1,4 +1,4 @@
-package com.voxia.brain
+package com.voxia.utils
 
 object LanguageDetector {
 
