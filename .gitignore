@@ -35,3 +35,4 @@ local.properties
 keystore.propertiesdata/vision/runs/
 data/vision/yolov8n.pt
 *.pt
+data/vision/runs/
