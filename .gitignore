@@ -32,4 +32,5 @@ local.properties
 
 # Clés privées
 *.jks
-keystore.properties
+keystore.propertiesdata/vision/runs/
+data/vision/yolov8n.pt
