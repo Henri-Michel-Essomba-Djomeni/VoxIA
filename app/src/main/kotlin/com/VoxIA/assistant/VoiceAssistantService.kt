@@ -4,19 +4,23 @@ import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
-import android.content.Intent
-import android.content.pm.PackageManager
 import android.content.ContentResolver
+import android.content.Intent as AndroidIntent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.database.Cursor
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.provider.ContactsContract
-import android.speech.tts.TextToSpeech
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.VoxIA.speech.SpeechManager
+import com.VoxIA.speech.stt.STTResult
+import com.VoxIA.speech.stt.SpeechLanguage
 import com.voxia.brain.Intent
 import com.voxia.brain.IntentClassifierEngine
 import com.voxia.brain.IntentMapper
@@ -24,9 +28,6 @@ import com.voxia.brain.Language
 import com.voxia.brain.PredictionResult
 import com.voxia.brain.VoxiaContext
 import com.voxia.brain.VoxiaResponses
-import com.voxia.speech.SpeechManager
-import com.voxia.speech.stt.STTResult
-import com.voxia.speech.stt.SpeechLanguage
 import com.voxia.utils.MemoryManager
 import com.voxia.vision.OCRModule
 import com.voxia.vision.OCRResult
@@ -34,7 +35,6 @@ import com.voxia.vision.VisionModule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.media.AudioManager
 
 class VoiceAssistantService : Service(), VoxiaContext {
 
@@ -132,25 +132,19 @@ class VoiceAssistantService : Service(), VoxiaContext {
     override fun speakTime() {
         val format = SimpleDateFormat("HH:mm", Locale.getDefault())
         val time = format.format(Date())
-        speak(
-            "Il est $time.",
-            "The time is $time."
-        )
+        speak("Il est $time.", "The time is $time.")
     }
 
     override fun speakDate() {
         val format = SimpleDateFormat("EEEE d MMMM yyyy", Locale.FRENCH)
         val date = format.format(Date())
-        speak(
-            "Nous sommes le $date.",
-            "Today is $date."
-        )
+        speak("Nous sommes le $date.", "Today is $date.")
     }
 
     override fun speakBatteryLevel() {
-        val intent = registerReceiver(null, android.content.IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        val level = intent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-        val scale = intent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+        val batteryIntent = registerReceiver(null, IntentFilter(AndroidIntent.ACTION_BATTERY_CHANGED))
+        val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+        val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
         val percent = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
         speak(
             if (percent >= 0) "Batterie à $percent pour cent." else "Impossible de lire la batterie.",
@@ -186,14 +180,13 @@ class VoiceAssistantService : Service(), VoxiaContext {
         loadVisionModule()
         visionModule?.let { vision ->
             vision.startDetection { results ->
-                val vm = vision
-                vm.stopDetection()
-                val voice = vm.buildVoiceDescription(results, when (currentLanguage) {
+                vision.stopDetection()
+                val voice = vision.buildVoiceDescription(results, when (currentLanguage) {
                     Language.FRENCH -> "fr"
                     else -> "en"
                 })
                 speak(voice, voice)
-                vm.releaseModel()
+                vision.releaseModel()
                 visionModule = null
                 MemoryManager.unload("vision")
             }
@@ -224,21 +217,12 @@ class VoiceAssistantService : Service(), VoxiaContext {
                 else -> "en"
             }) { result ->
                 when (result) {
-                    is OCRResult.Success -> {
-                        speak(
-                            result.voiceText,
-                            result.voiceText
-                        )
-                    }
-                    is OCRResult.NoText -> {
-                        speak(result.message, result.message)
-                    }
-                    is OCRResult.Error -> {
-                        speak(
-                            "Erreur de lecture: ${result.message}",
-                            "Reading error: ${result.message}"
-                        )
-                    }
+                    is OCRResult.Success -> speak(result.voiceText, result.voiceText)
+                    is OCRResult.NoText -> speak(result.message, result.message)
+                    is OCRResult.Error -> speak(
+                        "Erreur de lecture: ${result.message}",
+                        "Reading error: ${result.message}"
+                    )
                 }
                 ocrModule = null
                 MemoryManager.unload("ocr")
@@ -263,13 +247,10 @@ class VoiceAssistantService : Service(), VoxiaContext {
 
         val number = findContactNumber(contactName)
         if (number != null) {
-            speak(
-                "Appel de $contactName en cours.",
-                "Calling $contactName."
-            )
-            val intent = Intent(Intent.ACTION_CALL).apply {
+            speak("Appel de $contactName en cours.", "Calling $contactName.")
+            val intent = AndroidIntent(AndroidIntent.ACTION_CALL).apply {
                 data = Uri.parse("tel:$number")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                flags = AndroidIntent.FLAG_ACTIVITY_NEW_TASK
             }
             startActivity(intent)
         } else {
@@ -328,10 +309,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
         val newVolume = (current + 1).coerceAtMost(max)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
-        speak(
-            "Volume augmenté à $newVolume.",
-            "Volume increased to $newVolume."
-        )
+        speak("Volume augmenté à $newVolume.", "Volume increased to $newVolume.")
     }
 
     override fun decreaseVolume() {
@@ -339,10 +317,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
         val current = audio.getStreamVolume(AudioManager.STREAM_MUSIC)
         val newVolume = (current - 1).coerceAtLeast(0)
         audio.setStreamVolume(AudioManager.STREAM_MUSIC, newVolume, 0)
-        speak(
-            "Volume diminué à $newVolume.",
-            "Volume decreased to $newVolume."
-        )
+        speak("Volume diminué à $newVolume.", "Volume decreased to $newVolume.")
     }
 
     override fun openApp(appName: String?) {
@@ -406,7 +381,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: AndroidIntent?): IBinder? = null
 
     override fun onDestroy() {
         speechManager.release()
