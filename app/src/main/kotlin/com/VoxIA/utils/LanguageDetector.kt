@@ -1,5 +1,7 @@
 package com.voxia.utils
 
+import com.voxia.brain.Language
+
 object LanguageDetector {
 
     // Mots clés français

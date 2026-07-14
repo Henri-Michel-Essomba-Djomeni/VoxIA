@@ -14,7 +14,7 @@ android {
         versionCode = 1
         versionName = "1.0-MVP"
 
-        buildConfigField("String", "PICOVOICE_KEY", "\"${project.findProperty("PICOVOICE_KEY") ?: ""}\"")
+        // PICOVOICE_KEY retiré — remplacé par Vosk keyphrase
     }
 
     buildTypes {
@@ -75,8 +75,7 @@ dependencies {
 
     implementation("com.alphacephei:vosk-android:0.3.47")
 
-    implementation("ai.picovoice:porcupine-android:3.0.1")
-
+    // Porcupine retiré — remplacé par Vosk setKeyphrase intégré
     implementation("org.tensorflow:tensorflow-lite:2.14.0")
     implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
     implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")

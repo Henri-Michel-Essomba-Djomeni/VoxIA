@@ -55,7 +55,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
     private var lastResponse: Pair<String, String> = Pair("", "")
     private var lastTranscript: String = ""
 
-    private var currentSpeechLanguage: SpeechLanguage
+    private val currentSpeechLanguage: SpeechLanguage
         get() = when (currentLanguage) {
             Language.FRENCH -> SpeechLanguage.FR
             Language.ENGLISH -> SpeechLanguage.EN

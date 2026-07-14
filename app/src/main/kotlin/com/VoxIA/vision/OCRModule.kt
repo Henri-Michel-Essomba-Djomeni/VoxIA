@@ -198,7 +198,7 @@ class OCRModule(private val context: Context) {
         val cleanedBlocks = visionText.textBlocks
             .filter { block ->
                 block.text.length >= MIN_BLOCK_LENGTH &&
-                (block.confidence ?: 1f) >= MIN_CONFIDENCE
+                true // confidence retiré de ML Kit 16.0+
             }
             .sortedBy { it.boundingBox?.top ?: 0 } // Trier haut → bas
             .map { block ->

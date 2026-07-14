@@ -2,116 +2,157 @@ package com.VoxIA.speech.wakeword
 
 import android.content.Context
 import android.util.Log
-import com.voxia.assistant.BuildConfig
-import ai.picovoice.porcupine.Porcupine
-import ai.picovoice.porcupine.PorcupineActivationException
-import ai.picovoice.porcupine.PorcupineException
-import ai.picovoice.porcupine.PorcupineManager
-import ai.picovoice.porcupine.PorcupineManagerCallback
+import org.json.JSONObject
+import org.vosk.Model
+import org.vosk.Recognizer
+import org.vosk.android.RecognitionListener
+import org.vosk.android.SpeechService
+import java.io.File
 
 class WakeWordService(private val context: Context) {
 
     companion object {
         private const val TAG = "VoxIA_WakeWord"
-        // Clé Picovoice — à mettre dans local.properties
-        private const val ACCESS_KEY = BuildConfig.PICOVOICE_KEY
-        // Nom du fichier .ppn dans assets/ (sera généré sur console Picovoice)
-        private const val WAKE_WORD_FILE = "voxia_android.ppn"
+        private const val SAMPLE_RATE = 16000
+        private const val WAKE_WORD = "voxia"
+        private const val MODEL_FR = "vosk-model-small-fr"
     }
 
-    private var porcupineManager: PorcupineManager? = null
+    private var model: Model? = null
+    private var recognizer: Recognizer? = null
+    private var speechService: SpeechService? = null
     private var isActive = false
+    private var isPaused = false
+    private var restartPending = false
     private val listeners = mutableListOf<() -> Unit>()
 
-    // ─── DÉMARRER LA DÉTECTION ────────────────────────
     fun start(onError: ((String) -> Unit)? = null) {
         if (isActive) return
 
         try {
-            // Charger le fichier .ppn depuis assets
-            val keywordPath = copyAssetToCache(WAKE_WORD_FILE)
+            val modelPath = File(context.filesDir, MODEL_FR).absolutePath
+            if (!File(modelPath).exists()) {
+                Log.w(TAG, "Modèle non trouvé — fallback mode DEV")
+                startDevMode()
+                return
+            }
 
-            porcupineManager = PorcupineManager.Builder()
-                .setAccessKey(ACCESS_KEY)
-                .setKeywordPath(keywordPath)
-                .setSensitivity(0.7f) // 0.0 à 1.0 — plus haut = plus sensible
-                .build(context, PorcupineManagerCallback { keywordIndex ->
-                    Log.d(TAG, "Wake word détecté ! index=$keywordIndex")
-                    trigger()
-                })
+            model = Model(modelPath)
+            recognizer = Recognizer(model, SAMPLE_RATE.toFloat(), "[\"$WAKE_WORD\"]")
+            speechService = SpeechService(recognizer, SAMPLE_RATE.toFloat())
 
-            porcupineManager?.start()
             isActive = true
-            Log.d(TAG, "Porcupine actif — en attente de 'VOXIA'")
+            startListening()
+            Log.d(TAG, "Wake word Vosk actif — en attente de '$WAKE_WORD'")
 
-        } catch (e: PorcupineActivationException) {
-            Log.e(TAG, "Clé Picovoice invalide: ${e.message}")
-            onError?.invoke("Clé Picovoice invalide")
-            startDevMode() // fallback simulation
-        } catch (e: PorcupineException) {
-            Log.e(TAG, "Erreur Porcupine: ${e.message}")
-            onError?.invoke(e.message ?: "Erreur Porcupine")
-            startDevMode() // fallback simulation
         } catch (e: Exception) {
-            Log.e(TAG, "Erreur inattendue: ${e.message}")
-            onError?.invoke(e.message ?: "Erreur inconnue")
-            startDevMode() // fallback simulation
+            Log.e(TAG, "Erreur init: ${e.message}")
+            startDevMode()
         }
     }
 
-    // ─── MODE DEV : simulation ────────────────────────
-    // Utilisé tant que le fichier .ppn n'est pas disponible
+    private val listener = object : RecognitionListener {
+        override fun onPartialResult(hypothesis: String?) {
+            if (isPaused) return
+            val text = extractText(hypothesis ?: "", "partial")
+            if (text.contains(WAKE_WORD, ignoreCase = true)) {
+                Log.d(TAG, "Wake word détecté: '$text'")
+                onDetected()
+            }
+        }
+
+        override fun onResult(hypothesis: String?) {
+            val text = extractText(hypothesis ?: "", "text")
+            if (text.contains(WAKE_WORD, ignoreCase = true)) {
+                Log.d(TAG, "Wake word détecté (final): '$text'")
+                onDetected()
+                return
+            }
+            scheduleRestart()
+        }
+
+        override fun onFinalResult(hypothesis: String?) {
+            scheduleRestart()
+        }
+
+        override fun onError(exception: Exception?) {
+            Log.e(TAG, "Erreur: ${exception?.message}")
+            scheduleRestart(500)
+        }
+
+        override fun onTimeout() {
+            scheduleRestart()
+        }
+    }
+
+    private fun startListening() {
+        if (isPaused || !isActive) return
+        speechService?.stop()
+        speechService?.startListening(listener)
+    }
+
+    private fun scheduleRestart(delayMs: Long = 0) {
+        if (restartPending || !isActive || isPaused) return
+        restartPending = true
+        speechService?.stop()
+        Thread {
+            if (delayMs > 0) Thread.sleep(delayMs)
+            restartPending = false
+            if (isActive && !isPaused) startListening()
+        }.start()
+    }
+
+    private fun onDetected() {
+        speechService?.stop()
+        isPaused = true
+        listeners.forEach { it.invoke() }
+    }
+
+    private fun extractText(json: String, key: String): String {
+        return try {
+            JSONObject(json).optString(key, "").trim().lowercase()
+        } catch (_: Exception) { "" }
+    }
+
+    fun pause() {
+        isPaused = true
+        speechService?.stop()
+    }
+
+    fun resume() {
+        isPaused = false
+        if (isActive) startListening()
+    }
+
+    fun onWakeWord(callback: () -> Unit): () -> Unit {
+        listeners.add(callback)
+        return { listeners.remove(callback) }
+    }
+
     private fun startDevMode() {
-        Log.w(TAG, "Mode DEV — wake word simulé toutes les 30s")
         isActive = true
         Thread {
             while (isActive) {
                 Thread.sleep(30000)
-                if (isActive) {
+                if (isActive && !isPaused) {
                     Log.d(TAG, "Wake word simulé")
-                    trigger()
+                    listeners.forEach { it.invoke() }
                 }
             }
         }.start()
     }
 
-    // ─── DÉCLENCHER LES LISTENERS ─────────────────────
-    private fun trigger() {
-        listeners.forEach { it.invoke() }
-    }
-
-    // ─── S'ABONNER ────────────────────────────────────
-    fun onWakeWord(callback: () -> Unit): () -> Unit {
-        listeners.add(callback)
-        // Retourne une fonction pour se désabonner
-        return { listeners.remove(callback) }
-    }
-
-    // ─── ARRÊTER ──────────────────────────────────────
     fun stop() {
         isActive = false
-        try {
-            porcupineManager?.stop()
-            porcupineManager?.delete()
-            porcupineManager = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Erreur arrêt Porcupine: ${e.message}")
-        }
+        speechService?.stop()
+        speechService?.shutdown()
+        recognizer?.close()
+        model?.close()
+        speechService = null
+        recognizer = null
+        model = null
+        listeners.clear()
         Log.d(TAG, "WakeWord arrêté")
-    }
-
-    // ─── COPIER ASSET VERS CACHE ──────────────────────
-    // Porcupine a besoin d'un chemin fichier, pas d'un asset stream
-    private fun copyAssetToCache(fileName: String): String {
-        val outFile = java.io.File(context.cacheDir, fileName)
-        if (!outFile.exists()) {
-            context.assets.open(fileName).use { input ->
-                outFile.outputStream().use { output ->
-                    input.copyTo(output)
-                }
-            }
-        }
-        return outFile.absolutePath
     }
 
     fun isRunning() = isActive

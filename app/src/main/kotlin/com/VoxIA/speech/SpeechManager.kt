@@ -148,7 +148,15 @@ class SpeechManager(private val context: Context) {
 
     // ─── ÉTAT ─────────────────────────────────────────
     private fun setState(newState: SpeechState) {
+        val oldState = state
         state = newState
+
+        if (newState == SpeechState.LISTENING && oldState == SpeechState.IDLE) {
+            wakeWord.pause()
+        } else if (newState == SpeechState.IDLE && oldState != SpeechState.IDLE) {
+            wakeWord.resume()
+        }
+
         onStateChange?.invoke(newState)
         Log.d(TAG, "État → $newState")
     }

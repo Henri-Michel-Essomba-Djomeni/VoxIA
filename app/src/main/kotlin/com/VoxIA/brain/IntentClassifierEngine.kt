@@ -7,6 +7,7 @@ import org.tensorflow.lite.support.common.FileUtil
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
+import com.voxia.utils.LanguageDetector
 
 class IntentClassifierEngine(private val context: Context) {
 
@@ -75,7 +76,7 @@ class IntentClassifierEngine(private val context: Context) {
             "batterie" to Intent.BATTERY_STATUS,
             "battery" to Intent.BATTERY_STATUS,
 
-            "volume" to Intent.VOLUME_UP or Intent.VOLUME_DOWN,
+            "volume" to Intent.VOLUME_UP,
             "fort" to Intent.VOLUME_UP,
             "plus" to Intent.VOLUME_UP,
             "up" to Intent.VOLUME_UP,
