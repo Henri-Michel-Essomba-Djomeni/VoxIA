@@ -18,6 +18,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.voxia.brain.Intent
+import com.voxia.brain.IntentClassifierEngine
 import com.voxia.brain.IntentMapper
 import com.voxia.brain.Language
 import com.voxia.brain.PredictionResult
@@ -44,6 +45,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
     }
 
     private lateinit var speechManager: SpeechManager
+    private lateinit var intentClassifier: IntentClassifierEngine
     private var visionModule: VisionModule? = null
     private var ocrModule: OCRModule? = null
     private var lifecycleOwner: LifecycleOwner? = null
@@ -69,6 +71,9 @@ class VoiceAssistantService : Service(), VoxiaContext {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .build())
+
+        intentClassifier = IntentClassifierEngine(this)
+        intentClassifier.loadModel()
 
         speechManager = SpeechManager(this)
         speechManager.init(
@@ -100,11 +105,8 @@ class VoiceAssistantService : Service(), VoxiaContext {
             SpeechLanguage.FR -> Language.FRENCH
             SpeechLanguage.EN -> Language.ENGLISH
         }
-        val result = PredictionResult(
-            intent = Intent.FALLBACK,
-            language = lang,
-            confidence = 0.85f
-        )
+        val result = intentClassifier.classify(text, lang)
+        Log.d(TAG, "Commande: '$text' → ${result.intent} (${result.language}, conf=${result.confidence})")
         IntentMapper.execute(result, this)
     }
 
@@ -408,6 +410,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
 
     override fun onDestroy() {
         speechManager.release()
+        intentClassifier.release()
         visionModule?.release()
         ocrModule?.release()
         MemoryManager.unloadAll()
