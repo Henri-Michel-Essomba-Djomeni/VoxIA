@@ -172,7 +172,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
             }
             MemoryManager.load("vision")
             visionModule = VisionModule(this)
-            visionModule?.initialize(owner)
+            visionModule?.initialize(owner, previewView)
             visionModule?.loadModel()
         }
     }
@@ -206,7 +206,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
             }
             MemoryManager.load("ocr")
             ocrModule = OCRModule(this)
-            ocrModule?.initialize(owner)
+            ocrModule?.initialize(owner, previewView)
         }
     }
 

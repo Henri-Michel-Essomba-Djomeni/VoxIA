@@ -120,9 +120,13 @@ class SpeechManager(private val context: Context) {
             return
         }
 
-        // Envoyer la commande au Brain (Dev3)
+        // Envoyer la commande au Brain
         onCommandDetected?.invoke(result.text, currentLanguage)
-        setState(SpeechState.IDLE)
+        // Ne pas override SPEAKING (action synchrone comme speakTime)
+        // ni laisser en LISTENING si l'action est asynchrone (vision)
+        if (state == SpeechState.PROCESSING) {
+            setState(SpeechState.IDLE)
+        }
     }
 
     // ─── RÉPONDRE VOCALEMENT ──────────────────────────

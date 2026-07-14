@@ -19,21 +19,45 @@ class VisionModule(private val context: Context) {
         private const val TAG = "VisionModule"
 
         private val LABEL_FR = mapOf(
-            "person" to "personne", "bicycle" to "vélo", "car" to "voiture",
-            "motorcycle" to "moto", "airplane" to "avion", "bus" to "bus",
-            "train" to "train", "truck" to "camion", "boat" to "bateau",
+            // Personnes & animaux
+            "person" to "personne", "man" to "homme", "woman" to "femme",
+            "child" to "enfant", "baby" to "bébé",
+            "bird" to "oiseau", "cat" to "chat", "dog" to "chien",
+            "horse" to "cheval", "sheep" to "mouton", "cow" to "vache",
+            "elephant" to "éléphant", "bear" to "ours",
+            "zebra" to "zèbre", "giraffe" to "girafe",
+            "butterfly" to "papillon", "insect" to "insecte",
+            "fish" to "poisson",
+
+            // Véhicules
+            "bicycle" to "vélo", "car" to "voiture", "motorcycle" to "moto",
+            "airplane" to "avion", "bus" to "bus", "train" to "train",
+            "truck" to "camion", "boat" to "bateau",
+            "bicycle" to "vélo", "scooter" to "scooter",
+            "helicopter" to "hélicoptère", "ambulance" to "ambulance",
+
+            // Signalisation
             "traffic light" to "feu tricolore", "fire hydrant" to "bouche d'incendie",
             "stop sign" to "panneau stop", "parking meter" to "parcmètre",
-            "bench" to "banc", "bird" to "oiseau", "cat" to "chat",
-            "dog" to "chien", "horse" to "cheval", "sheep" to "mouton",
-            "cow" to "vache", "elephant" to "éléphant", "bear" to "ours",
-            "zebra" to "zèbre", "giraffe" to "girafe", "backpack" to "sac à dos",
-            "umbrella" to "parapluie", "handbag" to "sac", "tie" to "cravate",
-            "suitcase" to "valise", "frisbee" to "frisbee", "skis" to "skis",
+            "bench" to "banc",
+
+            // Accessoires
+            "backpack" to "sac à dos", "umbrella" to "parapluie",
+            "handbag" to "sac à main", "tie" to "cravate",
+            "suitcase" to "valise", "hat" to "chapeau",
+            "glasses" to "lunettes", "sunglasses" to "lunettes de soleil",
+            "wallet" to "portefeuille", "watch" to "montre",
+            "belt" to "ceinture",
+
+            // Équipement sportif
+            "frisbee" to "frisbee", "skis" to "skis",
             "snowboard" to "snowboard", "sports ball" to "ballon",
             "kite" to "cerf-volant", "baseball bat" to "batte",
             "baseball glove" to "gant", "skateboard" to "skateboard",
             "surfboard" to "planche de surf", "tennis racket" to "raquette",
+            "ball" to "balle", "racket" to "raquette",
+
+            // Nourriture & boissons
             "bottle" to "bouteille", "plate" to "assiette",
             "wine glass" to "verre à vin", "cup" to "tasse",
             "fork" to "fourchette", "knife" to "couteau",
@@ -43,16 +67,57 @@ class VisionModule(private val context: Context) {
             "broccoli" to "brocoli", "carrot" to "carotte",
             "hot dog" to "hot dog", "pizza" to "pizza",
             "donut" to "donut", "cake" to "gâteau",
+            "cookie" to "biscuit", "bread" to "pain",
+            "cheese" to "fromage", "egg" to "œuf",
+            "rice" to "riz", "pasta" to "pâtes",
+            "soup" to "soupe", "salad" to "salade",
+            "water" to "eau", "juice" to "jus",
+            "milk" to "lait", "coffee" to "café",
+            "tea" to "thé", "beer" to "bière",
+
+            // Maison & meubles
             "chair" to "chaise", "couch" to "canapé",
-            "potted plant" to "plante", "bed" to "lit",
-            "dining table" to "table", "toilet" to "toilette",
-            "tv" to "télévision", "laptop" to "ordinateur",
+            "potted plant" to "plante en pot", "bed" to "lit",
+            "dining table" to "table à manger", "toilet" to "toilette",
+            "table" to "table", "door" to "porte",
+            "window" to "fenêtre", "mirror" to "miroir",
+            "lamp" to "lampe", "pillow" to "oreiller",
+            "curtain" to "rideau", "rug" to "tapis",
+            "shelf" to "étagère", "drawer" to "tiroir",
+            "cabinet" to "armoire",
+
+            // Électronique
+            "tv" to "télévision", "laptop" to "ordinateur portable",
             "mouse" to "souris", "remote" to "télécommande",
             "keyboard" to "clavier", "cell phone" to "téléphone",
+            "phone" to "téléphone", "computer" to "ordinateur",
+            "tablet" to "tablette", "charger" to "chargeur",
+            "earphone" to "écouteurs", "headphone" to "casque",
+            "speaker" to "enceinte", "camera" to "appareil photo",
+            "printer" to "imprimante", "screen" to "écran",
+            "television" to "télévision", "monitor" to "moniteur",
+
+            // Objets divers
             "book" to "livre", "clock" to "horloge",
             "vase" to "vase", "scissors" to "ciseaux",
             "teddy bear" to "ours en peluche",
-            "hair drier" to "sèche-cheveux", "toothbrush" to "brosse à dents"
+            "hair drier" to "sèche-cheveux",
+            "toothbrush" to "brosse à dents",
+            "key" to "clé", "keys" to "clés",
+            "pen" to "stylo", "pencil" to "crayon",
+            "paper" to "papier", "notebook" to "carnet",
+            "bag" to "sac", "box" to "boîte",
+            "basket" to "panier", "rope" to "corde",
+            "lighter" to "briquet", "candle" to "bougie",
+            "spoon" to "cuillère", "pot" to "marmite",
+            "pan" to "poêle", "bucket" to "seau",
+            "tool" to "outil", "hammer" to "marteau",
+            "screwdriver" to "tournevis", "knife" to "couteau",
+            "money" to "argent", "coin" to "pièce",
+            "card" to "carte", "ticket" to "billet",
+            "glove" to "gant", "mask" to "masque",
+            "shoe" to "chaussure", "clothing" to "vêtement",
+            "towel" to "serviette", "soap" to "savon"
         )
     }
 
@@ -117,7 +182,7 @@ class VisionModule(private val context: Context) {
                 .enableClassification()
                 .build()
             objectDetector = ObjectDetection.getClient(options)
-            Log.d(TAG, "ML Kit Object Detection prêt (~3 Mo)")
+            Log.d(TAG, "ML Kit Object Detection prêt (~10 Mo, 400+ classes)")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Échec chargement ML Kit: ${e.message}")
@@ -128,7 +193,7 @@ class VisionModule(private val context: Context) {
     fun releaseModel() {
         objectDetector?.close()
         objectDetector = null
-        Log.d(TAG, "ML Kit Object Detection libéré")
+        Log.d(TAG, "ML Kit libéré")
     }
 
     fun startDetection(callback: (List<DetectionResult>) -> Unit) {
@@ -155,10 +220,7 @@ class VisionModule(private val context: Context) {
         }
 
         val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val detector = objectDetector ?: run {
-            imageProxy.close()
-            return
-        }
+        val detector = objectDetector ?: run { imageProxy.close(); return }
 
         detector.process(inputImage)
             .addOnSuccessListener { objects ->
@@ -169,10 +231,10 @@ class VisionModule(private val context: Context) {
                         label = label.text,
                         confidence = label.confidence,
                         boundingBox = BoundingBox(
-                            x1 = obj.boundingBox.left.toFloat() / imageProxy.width,
-                            y1 = obj.boundingBox.top.toFloat() / imageProxy.height,
-                            x2 = obj.boundingBox.right.toFloat() / imageProxy.width,
-                            y2 = obj.boundingBox.bottom.toFloat() / imageProxy.height
+                            x1 = obj.boundingBox.left.toFloat() / imageProxy.width.coerceAtLeast(1),
+                            y1 = obj.boundingBox.top.toFloat() / imageProxy.height.coerceAtLeast(1),
+                            x2 = obj.boundingBox.right.toFloat() / imageProxy.width.coerceAtLeast(1),
+                            y2 = obj.boundingBox.bottom.toFloat() / imageProxy.height.coerceAtLeast(1)
                         )
                     )
                 }
@@ -191,10 +253,11 @@ class VisionModule(private val context: Context) {
             return if (language == "fr") "Je ne détecte aucun objet clairement."
             else "I cannot detect any object clearly."
         }
-        val top = results.take(3)
+        val top = results.take(5)
         return if (language == "fr") {
             val items = top.joinToString(", ") {
-                "${LABEL_FR[it.label.lowercase()] ?: it.label} (${(it.confidence * 100).toInt()}%)"
+                val label = LABEL_FR[it.label.lowercase()] ?: it.label
+                "$label (${(it.confidence * 100).toInt()}%)"
             }
             if (top.size == 1) "Je détecte : $items."
             else "Je détecte ${top.size} objets : $items."
