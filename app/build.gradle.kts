@@ -14,7 +14,7 @@ android {
         versionCode = 1
         versionName = "1.0-MVP"
 
-        // PICOVOICE_KEY retiré — remplacé par Vosk keyphrase
+        // PICOVOICE_KEY supprimé — wake word via Vosk grammaire
     }
 
     buildTypes {
@@ -50,10 +50,6 @@ android {
         }
     }
 
-    aaptOptions {
-        noCompress("tflite", "vosk")
-    }
-
     buildFeatures {
         buildConfig = true
         viewBinding = true
@@ -75,10 +71,7 @@ dependencies {
 
     implementation("com.alphacephei:vosk-android:0.3.47")
 
-    // Porcupine retiré — remplacé par Vosk setKeyphrase intégré
-    implementation("org.tensorflow:tensorflow-lite:2.14.0")
-    implementation("org.tensorflow:tensorflow-lite-support:0.4.4")
-    implementation("org.tensorflow:tensorflow-lite-gpu:2.14.0")
+    // TFLite retiré — Vision → ML Kit Object Detection, Brain → Regex patterns
 
     implementation("androidx.camera:camera-core:1.3.1")
     implementation("androidx.camera:camera-camera2:1.3.1")
@@ -86,8 +79,10 @@ dependencies {
     implementation("androidx.camera:camera-view:1.3.1")
 
     implementation("com.google.mlkit:text-recognition:16.0.0")
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
     implementation("com.google.mlkit:language-id:16.1.0")
     implementation("com.google.mlkit:translate:17.0.1")
+    implementation("com.google.mlkit:object-detection:17.0.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

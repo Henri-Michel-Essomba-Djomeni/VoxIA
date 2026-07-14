@@ -1,11 +1,15 @@
 package com.voxia.ui
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.speech.tts.TextToSpeech
+import android.os.IBinder
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +25,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var previewView: PreviewView
     private var voiceService: VoiceAssistantService? = null
     private var isServiceBound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as VoiceAssistantService.LocalBinder
+            voiceService = binder.getService()
+            isServiceBound = true
+            voiceService?.setLifecycleOwner(this@MainActivity)
+            voiceService?.setPreviewView(previewView)
+            Log.d("MainActivity", "Service VOXIA connecté")
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            voiceService = null
+            isServiceBound = false
+        }
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -78,11 +98,16 @@ class MainActivity : AppCompatActivity() {
         } else {
             startService(intent)
         }
+        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onDestroy() {
-        super.onDestroy()
+        if (isServiceBound) {
+            unbindService(serviceConnection)
+            isServiceBound = false
+        }
         val intent = Intent(this, VoiceAssistantService::class.java)
         stopService(intent)
+        super.onDestroy()
     }
 }

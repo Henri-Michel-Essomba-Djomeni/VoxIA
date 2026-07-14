@@ -55,7 +55,8 @@ class SpeechManager(private val context: Context) {
                 scope.launch {
                     stt.loadModel(SpeechLanguage.FR)
 
-                    // 3. Démarrer wake word
+                    // 3. Démarrer wake word (modèle partagé avec STT)
+                    stt.getLoadedModel(SpeechLanguage.FR)?.let { wakeWord.setModel(it) }
                     wakeWord.start()
                     wakeWord.onWakeWord {
                         onWakeWordDetected()

@@ -12,6 +12,7 @@ import android.database.Cursor
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
+import android.os.Binder
 import android.os.IBinder
 import android.provider.ContactsContract
 import android.util.Log
@@ -381,7 +382,13 @@ class VoiceAssistantService : Service(), VoxiaContext {
         }
     }
 
-    override fun onBind(intent: AndroidIntent?): IBinder? = null
+    inner class LocalBinder : Binder() {
+        fun getService(): VoiceAssistantService = this@VoiceAssistantService
+    }
+
+    private val binder = LocalBinder()
+
+    override fun onBind(intent: AndroidIntent?): IBinder? = binder
 
     override fun onDestroy() {
         speechManager.release()

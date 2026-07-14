@@ -19,12 +19,17 @@ class WakeWordService(private val context: Context) {
     }
 
     private var model: Model? = null
+    private var sharedModel: Model? = null
     private var recognizer: Recognizer? = null
     private var speechService: SpeechService? = null
     private var isActive = false
     private var isPaused = false
     private var restartPending = false
     private val listeners = mutableListOf<() -> Unit>()
+
+    fun setModel(model: Model) {
+        sharedModel = model
+    }
 
     fun start(onError: ((String) -> Unit)? = null) {
         if (isActive) return
@@ -37,7 +42,7 @@ class WakeWordService(private val context: Context) {
                 return
             }
 
-            model = Model(modelPath)
+            model = sharedModel ?: Model(modelPath)
             recognizer = Recognizer(model, SAMPLE_RATE.toFloat(), "[\"$WAKE_WORD\"]")
             speechService = SpeechService(recognizer, SAMPLE_RATE.toFloat())
 
@@ -150,6 +155,7 @@ class WakeWordService(private val context: Context) {
         model?.close()
         speechService = null
         recognizer = null
+        if (sharedModel == null) model?.close()
         model = null
         listeners.clear()
         Log.d(TAG, "WakeWord arrêté")
