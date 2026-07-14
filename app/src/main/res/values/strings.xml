@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VOXIA</string>
+    <string name="state_idle">À l\'écoute… Dites « VOXIA »</string>
+    <string name="state_listening">Je vous écoute…</string>
+    <string name="state_processing">Traitement en cours…</string>
+    <string name="state_speaking">Je parle…</string>
+    <string name="state_error">Erreur. Veuillez réessayer.</string>
+    <string name="transcript_placeholder">…</string>
+    <string name="response_placeholder">En attente de votre commande</string>
+</resources>

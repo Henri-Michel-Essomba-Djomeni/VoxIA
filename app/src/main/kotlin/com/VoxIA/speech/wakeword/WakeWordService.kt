@@ -2,6 +2,7 @@ package com.VoxIA.speech.wakeword
 
 import android.content.Context
 import android.util.Log
+import com.voxia.assistant.BuildConfig
 import ai.picovoice.porcupine.Porcupine
 import ai.picovoice.porcupine.PorcupineActivationException
 import ai.picovoice.porcupine.PorcupineException

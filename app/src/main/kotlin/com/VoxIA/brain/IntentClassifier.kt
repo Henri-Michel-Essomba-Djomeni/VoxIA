@@ -1,6 +1,5 @@
 package com.voxia.brain
 
-// Toutes les intentions possibles
 enum class Intent {
     IDENTIFY_OBJECT,
     READ_DOCUMENT,
@@ -29,16 +28,17 @@ enum class Intent {
     FALLBACK
 }
 
-// Les deux langues supportées
 enum class Language {
     FRENCH,
     ENGLISH,
     UNKNOWN
 }
 
-// Résultat retourné par le classifier
 data class PredictionResult(
     val intent: Intent,
     val language: Language,
-    val confidence: Float
+    val confidence: Float,
+    val extractedContact: String? = null,
+    val extractedAppName: String? = null,
+    val extractedExpression: String? = null
 )

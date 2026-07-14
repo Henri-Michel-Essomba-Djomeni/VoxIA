@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="background">#FF1A1A2E</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="transcript_bg">#332A2A5E</color>
+    <color name="response_bg">#334E4E8E</color>
+    <color name="response_text">#FFB8B8FF</color>
+    <color name="badge_bg">#FF4E4E8E</color>
+    <color name="badge_text">#FFFFFFFF</color>
+</resources>
