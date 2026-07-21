@@ -1,103 +1,44 @@
-# Module Brain - VOXIA
+# Module Brain — VOXIA alpha interne
 
-## Responsable
-Dev3 - Intent Classifier, Pipeline Dialogue, Connexion des modules
+## Rôle
 
-## Description
-Le module Brain est le cerveau de VOXIA. Il reçoit le texte transcrit 
-par Vosk (Dev2), détecte l'intention et la langue, puis déclenche 
-l'action correspondante.
+Le module Brain reçoit le texte fourni par le moteur vocal Android, estime une intention avec des règles locales, extrait quelques paramètres simples, puis appelle le contexte applicatif via `VoxiaContext`.
+
+## État actuel vérifié
+
+- `IntentClassifierEngine` utilise des règles déclarées en Kotlin.
+- `Intent` expose 26 intentions métier plus `FALLBACK`.
+- Aucun `intent_classifier.tflite` n'est livré dans `app/src/main/assets`.
+- Le fichier `intent_vocab.json` existe mais n'est pas utilisé par le pipeline courant.
+- La confiance retournée par `PredictionResult.confidence` est une heuristique de score relatif, pas une probabilité statistique.
+- Le STT appelé par l'application est Android `SpeechRecognizer`, via `AndroidSpeechRecognizerSTTService`.
 
 ## Fichiers
 
-### IntentClassifier.kt
-Contient les enums de base :
-- Intent : toutes les 25 intentions supportées
-- Language : FRENCH, ENGLISH, UNKNOWN
-- PredictionResult : résultat retourné (intention + langue + confiance)
+- `IntentClassifier.kt` : types `Intent`, `Language` et `PredictionResult`.
+- `IntentClassifierEngine.kt` : règles, scoring et extraction simple de slots.
+- `IntentMapper.kt` : routage de l'intention vers `VoxiaContext`.
+- `VoxiaContext.kt` : contrat entre Brain, voix, vision et actions Android.
+- `VoxiaResponses.kt` : réponses vocales FR/EN.
 
-### IntentMapper.kt
-Reçoit un PredictionResult et exécute l'action correspondante.
-Règle : si confiance est inférieure à 70% → demande clarification vocale.
+## Seuil d'exécution
 
-### VoxiaContext.kt
-Interface que DEV4 DOIT IMPLÉMENTER dans VoiceAssistantService.
-Contient tous les contrats entre Brain et le reste de l'app.
+`IntentMapper` demande une clarification lorsque `confidence < 0.70f`. Ce seuil protège seulement contre les scores faibles du moteur de règles actuel ; il devra être recalibré sur un jeu de test gelé avant toute métrique publique.
 
----
+## Connexions actuelles
 
-## Comment utiliser (pour Dev4)
-
-### Étape 1 - Implémenter VoxiaContext
-Dans ton VoiceAssistantService, implémente l'interface :
-
-class VoiceAssistantService : Service(), VoxiaContext {
-
-    override fun speak(fr: String, en: String) {
-        // Utiliser Android TTS ici
-    }
-
-    override fun loadVisionModule() {
-        // Charger YOLOv8n ici (Dev1)
-    }
-
-    override fun loadOcrModule() {
-        // Charger ML Kit OCR ici
-    }
-
-    override fun makeCall(contactName: String?) {
-        // Intent.ACTION_CALL ici
-    }
-
-    // ... implémenter toutes les autres fonctions
-}
-
-### Étape 2 - Charger le modèle TFLite
-Le modèle est dans :
-app/src/main/assets/intent_classifier.tflite
-
-### Étape 3 - Appeler le pipeline
-Quand Vosk retourne un texte transcrit :
-
-val result = PredictionResult(
-    intent = Intent.IDENTIFY_OBJECT,
-    language = Language.FRENCH,
-    confidence = 0.85f
-)
-IntentMapper.execute(result, this)
-
----
-
-## Modèle TFLite
-
-- Fichier : intent_classifier.tflite
-- Précision actuelle : 71.25%
-- Intentions : 25
-- Langues : FR + EN
-- Entraîné sur : 400 exemples (200 FR + 200 EN)
-
----
-
-## Connexions avec les autres modules
-
-| Intention | Module appelé | Dev responsable |
+| Intention | Module appelé | État |
 |---|---|---|
-| identify_object | Vision YOLOv8n | Dev1 |
-| read_document | ML Kit OCR | Dev3 |
-| call_contact | Intent Android | Dev4 |
-| switch_to_english | Vosk STT EN | Dev2 |
-| switch_to_french | Vosk STT FR | Dev2 |
+| `IDENTIFY_OBJECT` | ML Kit Image Labeling + OCR + codes-barres | Générique |
+| `SCAN_PRODUCT` | Code-barres/OCR/catégorie probable | Sans catalogue produit distant |
+| `READ_DOCUMENT` | ML Kit OCR latin | Capture unique |
+| `TRANSLATE_TEXT` | ML Kit OCR + Translate | Modèles de traduction téléchargeables |
+| `CALL_CONTACT` | `Intent.ACTION_DIAL` | Confirmation orale VOXIA puis composeur, pas d'appel silencieux |
+| `OPEN_APP` | Launcher Android | Confirmation orale VOXIA, recherche par libellé |
+| `SET_ALARM`, `SET_REMINDER` | `AlarmClock` | Confirmation orale VOXIA puis UI externe |
 
----
+`IntentMapper` lui-même ne gère pas la confirmation : elle est implémentée plus bas, dans `VoiceAssistantService` (`requestConfirmation` + `com.voxia.utils.ConfirmationParser`), pour les quatre intentions ci-dessus jugées sensibles. Voir ADR-0005 dans `docs/REGISTRE_DECISIONS.md`. Si une future intention modifie l'état du téléphone ou engage l'utilisateur (nouvel achat, envoi de message, etc.), elle doit passer par ce même mécanisme.
 
-## Seuil de confiance
-- Supérieur à 70% → exécute l'intention
-- Inférieur à 70% → TTS "Pouvez-vous répéter ?"
+## Évaluation attendue
 
----
-
-## Prochaines étapes
-- Semaine 3 : fallback langue + hot-switch
-- Semaine 4 : intégration TFLite avec Dev4
-- Semaine 6 : ML Kit OCR
-- Semaine 7 : extraction contact
+La mesure doit passer par `evaluation/intent/evaluate.py` avec un dataset consenti et versionné. Les métriques minimales sont exactitude, macro-F1, rappel par intention, matrice de confusion, taux d'abstention et taux de fausse action.
