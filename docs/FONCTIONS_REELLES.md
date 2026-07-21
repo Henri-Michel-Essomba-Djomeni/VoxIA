@@ -19,7 +19,8 @@ Portée : état du dépôt au moment de l'assainissement Phase 0, puis premiers 
 | Actions | Alarmes/minuteurs | `AlarmClock` + confirmation orale VOXIA | Délègue la saisie finale à l'application système |
 | Actions | Notifications | `NotificationListenerService` | Autorisation manuelle obligatoire |
 | Actions | Volume/date/heure/batterie | API Android | Fonctions utilitaires simples, jugées non sensibles donc sans confirmation |
-| Permissions | Explication avant demande système | `MainActivity.showPermissionRationale` (RECORD_AUDIO, CAMERA, READ_CONTACTS, POST_NOTIFICATIONS Android 13+) | Pas de logique anti-répétition ; RECORD_AUDIO et CAMERA vérifiés sur émulateur (voir ADR-0007), READ_CONTACTS et POST_NOTIFICATIONS non testés visuellement après extension |
+| Permissions | Explication avant demande système | `MainActivity.showPermissionRationale` (RECORD_AUDIO, CAMERA, READ_CONTACTS, POST_NOTIFICATIONS Android 13+) | RECORD_AUDIO et CAMERA vérifiés sur émulateur (voir ADR-0007) ; POST_NOTIFICATIONS est séquencé après le microphone et limité à une demande par session ; READ_CONTACTS, POST_NOTIFICATIONS et chemins de refus restent à vérifier visuellement |
+| Permissions | Purge des actions différées refusées | `VoiceAssistantService.clearPendingPermissionAction()` appelé par les refus caméra/contacts | Protège contre une action vocale ancienne relancée après refus ; vérifié par compilation/lint, pas encore par test UI instrumenté |
 
 ## Fonctions partiellement implémentées (prototypes non calibrés, Phase 1)
 
@@ -43,6 +44,7 @@ Ces fonctions existent en code et sont couvertes par des tests unitaires, mais r
 - Guidage caméra temps réel avec capture automatique (seul un contrôle qualité post-capture existe, voir ci-dessus).
 - Validation TalkBack complète.
 - Crash reporting respectueux de la vie privée.
+- Tests instrumentés Android couvrant permissions, confirmations et annulation réelle sur appareil.
 
 ## Règle de mise à jour
 

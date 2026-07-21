@@ -139,6 +139,10 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         action?.invoke()
     }
 
+    fun clearPendingPermissionAction() {
+        pendingPermissionAction = null
+    }
+
     fun setLifecycleOwner(owner: LifecycleOwner) {
         lifecycleOwner = owner
     }

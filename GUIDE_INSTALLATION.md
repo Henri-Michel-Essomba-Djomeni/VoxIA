@@ -51,6 +51,7 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 
 - `./gradlew test`
 - `./gradlew lintDebug`
+- `./gradlew assembleDebug` ou build release signé selon le canal de test.
 - Installation sur au moins un téléphone ARM64 réel.
 - Test microphone en environnement calme et bruité.
 - Test caméra : faible lumière, reflets, petits caractères, image inclinée et document partiellement coupé.
@@ -62,3 +63,16 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 ## Règle de publication
 
 Cette baseline ne doit pas être appelée “version 1.0 prête”. Toute communication externe doit parler de prototype alpha interne tant que les critères du plan directeur ne sont pas franchis.
+
+## Build source courant
+
+Pour vérifier l'état source actuel sur cette machine Windows :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+L'APK debug généré se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. Il sert au contrôle technique interne ; il ne remplace pas l'APK de baseline historique ni une release pilote signée.

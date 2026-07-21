@@ -463,3 +463,68 @@ Résultats :
 ## Limite assumée
 
 Le dialogue explicatif `POST_NOTIFICATIONS` n'a pas encore été vérifié visuellement sur émulateur/téléphone après cette modification. Il compile et passe lint, mais il reste à confirmer en exécution réelle Android 13+.
+
+---
+
+# CODEX — Reprise qualité senior, cohérence permissions/CI/docs
+
+Date : 2026-07-21
+Agent : Codex
+Portée : vérification du travail déjà réalisé, correction d'un écart permission, renforcement CI et remise en cohérence des fichiers Markdown de suivi. `PLAN_ACTION_VOXIA.md` reste la stratégie coeur et ne doit pas être modifié pour suivre l'avancement opérationnel.
+
+## Constats vérifiés
+
+- Le dépôt Git était propre au début de la reprise.
+- Les README et guides ne contiennent plus les anciennes promesses non prouvées (`71,25 %`, 400 exemples, Vosk/YOLO/TFLite livré).
+- `PLAN_ACTION_VOXIA.md` reste le document directeur. L'avancement opérationnel doit être tracé ici (`CODEX_EVOLUTION_VOXIA.md`) et dans les registres, pas en modifiant les cases du plan.
+- `MainActivity` demandait `POST_NOTIFICATIONS` au démarrage en plus du microphone, ce qui pouvait empiler deux rationales. Le callback caméra relançait aussi systématiquement `retryPendingPermissionAction()`, même quand la permission venait d'une action UI locale.
+
+## Changements principaux
+
+- `MainActivity.kt` :
+  - `POST_NOTIFICATIONS` est maintenant demandé seulement après disponibilité de `RECORD_AUDIO`, avec une seule tentative par session d'activité ;
+  - le callback caméra distingue une action UI (`pendingCameraAction`) d'une action vocale différée côté service ;
+  - les refus caméra/contacts purgent l'action vocale différée et affichent un message utilisateur explicite.
+- `VoiceAssistantService.kt` :
+  - ajout de `clearPendingPermissionAction()` pour supprimer une action différée après refus de permission.
+- `.github/workflows/build.yml` :
+  - la CI exécute désormais `./gradlew test`, `./gradlew lintDebug`, puis `./gradlew assembleDebug`.
+- Documentation :
+  - `PLAN_ACTION_VOXIA.md` a été restauré comme référence non modifiée après clarification utilisateur ;
+  - `docs/REGISTRE_DECISIONS.md` ajoute ADR-0008 ;
+  - `docs/REGISTRE_RISQUES.md` ajoute R-011 ;
+  - `docs/FONCTIONS_REELLES.md` reflète les limites réelles des permissions et tests.
+
+## Vérification
+
+Smoke tests évaluation avec le Python portable Codex :
+
+```powershell
+& 'C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' evaluation\intent\evaluate.py --dataset evaluation\intent\datasets\template.csv --name smoke_intent_template
+& 'C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' evaluation\stt\evaluate.py --manifest evaluation\stt\manifests\template.csv --name smoke_stt_template
+& 'C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' evaluation\ocr\evaluate.py --manifest evaluation\ocr\manifests\template.csv --name smoke_ocr_template
+```
+
+Résultat : 3/3 scripts exécutés avec succès.
+
+Gradle hors sandbox, avec `JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'` :
+
+```powershell
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : `BUILD SUCCESSFUL` ; 5 suites uniques, debug + release, 38 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : `BUILD SUCCESSFUL`, rapport généré dans `app/build/reports/lint-results-debug.html`.
+- `assembleDebug` : premier passage a empaqueté l'APK mais Windows a signalé un lock Gradle ouvert sur `.gradle/buildOutputCleanup`; après `gradlew --stop`, relance propre en `BUILD SUCCESSFUL`.
+- APK debug courant : `app/build/outputs/apk/debug/app-debug.apk`.
+- `git diff --check` : aucune erreur de whitespace ; uniquement les avertissements Git LF -> CRLF déjà connus sur Windows.
+
+## Limites restantes
+
+- Pas de test utilisateur cible ni dataset consenti : les mesures réelles Intent/STT/OCR restent impossibles localement.
+- Pas de vérification visuelle post-modification pour `POST_NOTIFICATIONS`, `READ_CONTACTS` et les chemins de refus permission.
+- Pas de test instrumenté Espresso/Robolectric : les permissions, confirmations vocales et annulations réelles restent validées par compilation/lint et par logique pure existante, pas par un scénario UI automatisé.

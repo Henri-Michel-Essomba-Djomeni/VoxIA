@@ -32,27 +32,35 @@ class MainActivity : AppCompatActivity() {
     private var bound = false
     private var receiverRegistered = false
     private var pendingCameraAction: (() -> Unit)? = null
+    private var notificationPermissionPromptedThisSession = false
 
     private val audioPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) startAndBindService()
+        if (granted) {
+            startAndBindService()
+            requestNotificationPermissionIfNeeded()
+        }
         else Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
     }
 
     private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
             previewView.visibility = View.VISIBLE
-            val hadServiceRequest = pendingCameraAction == null
-            service?.retryPendingPermissionAction()
-            if (!hadServiceRequest) pendingCameraAction?.invoke()
+            val uiAction = pendingCameraAction
+            pendingCameraAction = null
+            if (uiAction != null) uiAction.invoke() else service?.retryPendingPermissionAction()
         } else {
+            pendingCameraAction = null
+            service?.clearPendingPermissionAction()
             responseText.setText(R.string.permission_camera_denied)
         }
-        pendingCameraAction = null
     }
 
     private val contactsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) service?.retryPendingPermissionAction()
-        else responseText.setText(R.string.permission_contacts_denied)
+        else {
+            service?.clearPendingPermissionAction()
+            responseText.setText(R.string.permission_contacts_denied)
+        }
     }
 
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -83,12 +91,20 @@ class MainActivity : AppCompatActivity() {
                 when (permission) {
                     Manifest.permission.CAMERA -> showPermissionRationale(
                         R.string.permission_rationale_camera_title,
-                        R.string.permission_rationale_camera_message
+                        R.string.permission_rationale_camera_message,
+                        onDecline = {
+                            service?.clearPendingPermissionAction()
+                            responseText.setText(R.string.permission_camera_denied)
+                        }
                     ) { cameraPermission.launch(permission) }
 
                     Manifest.permission.READ_CONTACTS -> showPermissionRationale(
                         R.string.permission_rationale_contacts_title,
-                        R.string.permission_rationale_contacts_message
+                        R.string.permission_rationale_contacts_message,
+                        onDecline = {
+                            service?.clearPendingPermissionAction()
+                            responseText.setText(R.string.permission_contacts_denied)
+                        }
                     ) { contactsPermission.launch(permission) }
                 }
             }
@@ -112,7 +128,6 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.cancelButton).setOnClickListener { service?.cancelCurrentAction() }
 
         requestAudioAndStart()
-        requestNotificationPermissionIfNeeded()
     }
 
     override fun onStart() {
@@ -128,6 +143,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startAndBindService()
+            requestNotificationPermissionIfNeeded()
         }
     }
 
@@ -148,6 +164,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestAudioAndStart() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
             startAndBindService()
+            requestNotificationPermissionIfNeeded()
         } else {
             showPermissionRationale(
                 R.string.permission_rationale_audio_title,
@@ -159,7 +176,9 @@ class MainActivity : AppCompatActivity() {
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+        if (notificationPermissionPromptedThisSession) return
 
+        notificationPermissionPromptedThisSession = true
         showPermissionRationale(
             R.string.permission_rationale_notifications_title,
             R.string.permission_rationale_notifications_message,
