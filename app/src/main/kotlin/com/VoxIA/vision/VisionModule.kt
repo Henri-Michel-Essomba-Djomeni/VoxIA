@@ -163,6 +163,7 @@ class VisionModule(private val context: Context) {
         if (productMode) {
             ProductVoiceFormatter.build(result, productCatalog, language)?.let { return it }
         }
+        FinancialSafety.buildWarning(result, language)?.let { return it }
         val localizedLabels = result.labels.take(5).map {
             val name = if (language == "fr") VisionVocabulary.toFrench(it.text) else it.text
             "$name, ${(it.confidence * 100).toInt()} pour cent"
@@ -216,6 +217,54 @@ data class DetectionResult(
 data class BoundingBox(val x1: Float, val y1: Float, val x2: Float, val y2: Float)
 
 data class ProductCategory(val id: String, val nameFr: String, val nameEn: String, val keywords: Set<String>)
+
+object FinancialSafety {
+    private val labelKeywords = setOf(
+        "money",
+        "currency",
+        "cash",
+        "banknote",
+        "bill",
+        "coin",
+        "coins"
+    )
+    private val textMarkers = setOf(
+        "argent",
+        "monnaie",
+        "billet",
+        "coupure",
+        "banknote",
+        "currency",
+        "cash",
+        "cfa",
+        "fcfa",
+        "xaf",
+        "xof",
+        "beac",
+        "bceao"
+    )
+
+    fun buildWarning(result: VisionAnalysis, language: String): String? {
+        if (!looksFinancial(result)) return null
+        return if (language == "fr") {
+            "Je peux signaler que cela ressemble à de l'argent ou à une coupure, " +
+                "mais je ne peux pas identifier la valeur ni vérifier l'authenticité. " +
+                "Utilisez une source officielle ou une personne de confiance."
+        } else {
+            "I can say this may look like money or a banknote, " +
+                "but I cannot identify the value or verify authenticity. " +
+                "Use an official source or a trusted person."
+        }
+    }
+
+    fun looksFinancial(result: VisionAnalysis): Boolean {
+        val labels = result.labels.map { it.text.lowercase() }
+        if (labels.any { label -> labelKeywords.any { keyword -> label.contains(keyword) } }) return true
+
+        val visibleText = result.text.lowercase()
+        return textMarkers.any { marker -> visibleText.contains(marker) }
+    }
+}
 
 object ProductKnowledgeBase {
     private val categories = listOf(
@@ -279,7 +328,7 @@ object VisionVocabulary {
         "basket" to "panier", "rope" to "corde", "candle" to "bougie", "pot" to "marmite",
         "pan" to "poêle", "bucket" to "seau", "tool" to "outil", "hammer" to "marteau",
         "screwdriver" to "tournevis", "money" to "argent", "coin" to "pièce",
-        "card" to "carte", "ticket" to "billet", "glove" to "gant", "mask" to "masque",
+        "card" to "carte", "ticket" to "ticket", "glove" to "gant", "mask" to "masque",
         "shoe" to "chaussure", "clothing" to "vêtement", "fashion" to "article de mode",
         "towel" to "serviette", "soap" to "savon", "medicine" to "médicament",
         "cosmetics" to "cosmétique", "electronics" to "appareil électronique",

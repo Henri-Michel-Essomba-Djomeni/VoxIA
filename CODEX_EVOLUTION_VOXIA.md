@@ -866,3 +866,50 @@ Résultats :
 - AAB généré : `app/build/outputs/bundle/release/app-release.aab`.
 - Taille locale AAB : 47 557 649 octets, environ 45,4 Mio.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.
+
+---
+
+# CODEX — Reprise P1 ciblée, abstention financière Vision
+
+Date : 2026-07-21
+Agent : Codex
+Portée : réduire R-009 selon la règle du plan directeur : aucune reconnaissance de valeur de billet, aucune authentification de monnaie.
+
+## Objectif traité
+
+Empêcher la sortie Vision générique de transformer un label ML Kit lié à l'argent en promesse financière dangereuse.
+
+## Changements principaux
+
+- `VisionModule.kt` :
+  - ajout de `FinancialSafety`, règle pure qui détecte labels `money`, `currency`, `cash`, `banknote`, `bill`, `coin` et marqueurs texte `CFA`, `FCFA`, `XAF`, `XOF`, `BEAC`, `BCEAO` ;
+  - retour d'une abstention FR/EN avant description générique si la scène semble financière.
+- `VisionVocabulary` / `TTSResponses` :
+  - `ticket` reste `ticket` en français ;
+  - les labels financiers génériques deviennent “objet lié à l'argent” plutôt qu'une coupure nommée.
+- Tests :
+  - `FinancialSafetyTest` couvre label billet, texte CFA/BEAC et cas non financier `ticket`.
+- Documentation :
+  - inventaire réel, ADR-0015, R-009 et guide d'installation mis à jour.
+
+## Limites restantes
+
+- Pas de reconnaissance de coupure spécialisée.
+- Pas de validation caméra réelle sur billets BEAC/BCEAO ou objets ressemblants.
+- La règle réduit la mauvaise promesse ; elle ne garantit pas que tous les objets financiers seront détectés.
+
+## Vérification
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 35 tests uniques, debug + release, 70 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `PLAN_ACTION_VOXIA.md` : aucun diff.

@@ -11,6 +11,7 @@ Portée : état du dépôt au moment de l'assainissement Phase 0, puis premiers 
 | Voix | Synthèse vocale | Android `TextToSpeech` | Qualité variable selon téléphone et packs vocaux |
 | Intentions | Classification | Règles Kotlin dans `IntentClassifierEngine` | Couverture limitée des formulations naturelles |
 | Vision | Étiquetage générique | ML Kit Image Labeling | Non spécialisé VOXIA |
+| Vision | Abstention financière | `FinancialSafety` intercepte argent/monnaie/coupure/CFA/XAF/XOF et labels associés | VOXIA ne reconnaît pas la valeur d'une coupure et ne vérifie jamais l'authenticité |
 | Vision | OCR latin | ML Kit Text Recognition | Sensible au cadrage, flou, lumière et reflets |
 | Vision/OCR | Lecture segmentée | `DocumentTextSegmenter` + `DocumentReadingSession` + commandes/boutons précédent, répéter, suite et vitesse | Disponible après OCR réussi ; vitesse TTS réglable de 70 % à 140 %, pas de surlignage visuel, pas de pause/reprise TTS native |
 | Vision/OCR | Copier ou partager le dernier texte reconnu | Boutons UI avec avertissement confidentialité + commandes vocales `COPY_READING_TEXT` / `SHARE_READING_TEXT` avec confirmation orale | Action explicite utilisateur ; partage via chooser Android, aucun envoi silencieux ; presse-papiers Android à traiter comme zone sensible |

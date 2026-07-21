@@ -124,3 +124,12 @@
 - Motivation : R-007 signale le risque d'un APK trop lourd pour le terrain. L'AAB est le format de distribution Android adapté aux splits et à une livraison plus fine que l'APK debug monolithique.
 - Conséquence : chaque push/PR vérifie que la source courante peut produire un AAB release. Le dépôt garde aussi l'APK debug pour les contrôles techniques rapides.
 - Limite assumée : cette décision ne mesure pas encore la taille réelle livrée par appareil et n'introduit pas de modules dynamiques ou modèles à la demande.
+
+## ADR-0015 — Abstention explicite pour objets financiers
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : `VisionModule` appelle `FinancialSafety` avant de formater une description générique. Si les labels ou le texte visible évoquent argent, monnaie, coupure, CFA/XAF/XOF, BEAC/BCEAO ou équivalent anglais, VOXIA annonce qu'il ne peut ni identifier la valeur ni vérifier l'authenticité.
+- Motivation : le plan directeur interdit l'authentification de monnaie et exige abstention, seuil strict et absence de promesse financière sans protocole spécialisé.
+- Conséquence : une détection générique de type `money`, `banknote`, `bill` ou `coin` ne devient plus une réponse de reconnaissance financière. Le libellé `ticket` reste un ticket, pas un billet bancaire.
+- Limite assumée : ce n'est pas un classifieur de billets et cela ne remplace pas une future décision go/no-go sur un domaine spécialisé. La règle réduit le risque de mauvaise promesse, pas le risque de non-détection.

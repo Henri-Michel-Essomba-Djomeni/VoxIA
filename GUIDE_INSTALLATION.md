@@ -43,6 +43,7 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 - Pas de `intent_classifier.tflite` livré.
 - Pas de précision produit, OCR, STT ou Vision démontrée sur données réelles.
 - La reconnaissance produit par apparence seule est générique et ne doit pas promettre marque, prix, composition ou allergènes.
+- La reconnaissance d'argent ou de billets doit rester une abstention : VOXIA ne doit annoncer ni valeur de coupure ni authenticité.
 - Le catalogue produit local est vide par défaut hors en-tête ; une fiche produit doit avoir une source et une date avant d'être annoncée.
 - La traduction peut télécharger des modèles ML Kit lors du premier usage.
 - Copier le texte OCR place le contenu dans le presse-papiers Android ; éviter cette action sur un document sensible pendant les tests partagés.

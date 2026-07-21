@@ -90,8 +90,7 @@ object TTSResponses {
             "cup", "glass" -> "un verre"
 
             // Argent
-            "money", "bill", "banknote" -> "un billet"
-            "coin" -> "une pièce de monnaie"
+            "money", "bill", "banknote", "coin" -> "un objet lié à l'argent"
             "wallet" -> "un portefeuille"
 
             // Téléphone & tech

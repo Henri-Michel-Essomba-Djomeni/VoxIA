@@ -10,7 +10,7 @@
 | R-006 | STT fragile aux accents/bruits locaux | Élevé | Élevé | Collecte consentie, WER par sous-groupe | Ouvert |
 | R-007 | APK trop lourd pour le terrain | Moyen | Élevé | ABI filtrées `arm64-v8a`/`x86_64`, AAB release généré en CI ; mesure de taille terrain et modules à la demande restent à faire | En réduction |
 | R-008 | Produit présenté comme validé | Élevé | Moyen | Alpha interne, documents de limites | En réduction |
-| R-009 | Identification financière erronée | Très élevé | Moyen | Abstention, seuil strict, pas d'authentification | Non démarré |
+| R-009 | Identification financière erronée | Très élevé | Moyen | `FinancialSafety` force une abstention sur argent/monnaie/coupure/CFA/XAF/XOF et labels associés ; aucune valeur ni authenticité annoncée | En réduction |
 | R-010 | Accessibilité TalkBack incomplète | Élevé | Moyen | Descriptions accessibles synchronisées pour transcription/réponse, boutons moins fragiles à grande police ; tests TalkBack terrain toujours requis | En réduction |
 | R-011 | Dialogue de permission ou action différée incohérente | Moyen | Moyen | Rationale avant demande système, `POST_NOTIFICATIONS` séquencé après audio, purge des actions caméra/contacts refusées | En réduction |
 | R-012 | Produit identifié avec des informations inventées ou non sourcées | Élevé | Moyen | Catalogue local exigeant source/date, réponse explicite "produit inconnu", interdiction de prix/allergènes/composition sans source | En réduction |
