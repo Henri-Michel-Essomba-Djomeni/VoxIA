@@ -730,6 +730,48 @@ Résultats :
 - `assembleDebug` : succès ; APK debug régénéré.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.
 
+## Suite immédiate — avertissement confidentialité avant export UI
+
+Après relecture du risque R-014, ajout d'un avertissement UI avant les boutons `Copier` et `Partager`. Les commandes vocales restent explicites par la formulation de l'utilisateur ; la confirmation orale dédiée est traitée dans la tranche suivante.
+
+Vérification relancée :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultat : 3/3 commandes réussies, et `PLAN_ACTION_VOXIA.md` reste sans diff.
+
+## Suite immédiate — confirmation orale avant export OCR vocal
+
+Pour réduire davantage R-014, les intentions vocales `COPY_READING_TEXT` et `SHARE_READING_TEXT` ne déclenchent plus directement le presse-papiers ou le chooser Android. `IntentMapper` route maintenant vers des demandes de confirmation dédiées, et `VoiceAssistantService` demande un oui/non avant d'exécuter l'export lorsque du texte OCR récent existe.
+
+Différence volontaire entre UI et voix :
+
+- bouton `Copier` / `Partager` : avertissement visuel, puis action directe après validation ;
+- commande vocale : prompt TTS de confidentialité, puis action seulement après confirmation positive.
+
+Test ajouté : `IntentMapperTest` vérifie que les intentions d'export passent par `requestCopyLastReadingText()` et `requestShareLastReadingText()`, et qu'une faible confiance demande une clarification sans export.
+
+Vérification relancée :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 30 tests uniques, debug + release, 60 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `PLAN_ACTION_VOXIA.md` : aucun diff.
+
 ---
 
 # CODEX — Reprise P1 ciblée, vitesse de lecture TTS
@@ -780,44 +822,47 @@ Résultats :
 - `assembleDebug` : succès ; APK debug régénéré.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.
 
-## Suite immédiate — avertissement confidentialité avant export UI
+---
 
-Après relecture du risque R-014, ajout d'un avertissement UI avant les boutons `Copier` et `Partager`. Les commandes vocales restent explicites par la formulation de l'utilisateur ; la confirmation orale dédiée est traitée dans la tranche suivante.
+# CODEX — Reprise P1 ciblée, CI AAB release
 
-Vérification relancée :
+Date : 2026-07-21
+Agent : Codex
+Portée : réduire R-007 avec un artefact Android App Bundle vérifié, sans modifier le plan directeur.
+
+## Objectif traité
+
+Ajouter la génération d'un AAB release dans la CI et documenter l'artefact courant, afin de ne plus dépendre uniquement de l'APK debug monolithique pour les contrôles de distribution.
+
+## Changements principaux
+
+- `.github/workflows/build.yml` :
+  - ajout de `./gradlew bundleRelease` ;
+  - publication de `app/build/outputs/bundle/release/app-release.aab` sous l'artefact `voxia-release-aab`.
+- `GUIDE_INSTALLATION.md` :
+  - ajout de `bundleRelease` aux vérifications source ;
+  - mention du chemin AAB local ;
+  - précision que l'AAB ne remplace pas une release pilote signée.
+- Documentation :
+  - ADR-0014 ;
+  - R-007 passe de `Ouvert` à `En réduction`.
+
+## Limites restantes
+
+- Pas encore de mesure de taille livrée par appareil après split.
+- Pas de modules dynamiques ni modèles à la demande.
+- Pas de signature release terrain vérifiée dans cette tranche.
+
+## Vérification
 
 ```powershell
 $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-.\gradlew.bat test
-.\gradlew.bat lintDebug
-.\gradlew.bat assembleDebug
-```
-
-Résultat : 3/3 commandes réussies, et `PLAN_ACTION_VOXIA.md` reste sans diff.
-
-## Suite immédiate — confirmation orale avant export OCR vocal
-
-Pour réduire davantage R-014, les intentions vocales `COPY_READING_TEXT` et `SHARE_READING_TEXT` ne déclenchent plus directement le presse-papiers ou le chooser Android. `IntentMapper` route maintenant vers des demandes de confirmation dédiées, et `VoiceAssistantService` demande un oui/non avant d'exécuter l'export lorsque du texte OCR récent existe.
-
-Différence volontaire entre UI et voix :
-
-- bouton `Copier` / `Partager` : avertissement visuel, puis action directe après validation ;
-- commande vocale : prompt TTS de confidentialité, puis action seulement après confirmation positive.
-
-Test ajouté : `IntentMapperTest` vérifie que les intentions d'export passent par `requestCopyLastReadingText()` et `requestShareLastReadingText()`, et qu'une faible confiance demande une clarification sans export.
-
-Vérification relancée :
-
-```powershell
-$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
-.\gradlew.bat test
-.\gradlew.bat lintDebug
-.\gradlew.bat assembleDebug
+.\gradlew.bat bundleRelease
 ```
 
 Résultats :
 
-- `test` : succès ; 30 tests uniques, debug + release, 60 exécutions, 0 échec, 0 erreur, 0 ignoré.
-- `lintDebug` : succès.
-- `assembleDebug` : succès ; APK debug régénéré.
+- `bundleRelease` : succès.
+- AAB généré : `app/build/outputs/bundle/release/app-release.aab`.
+- Taille locale AAB : 47 557 649 octets, environ 45,4 Mio.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.

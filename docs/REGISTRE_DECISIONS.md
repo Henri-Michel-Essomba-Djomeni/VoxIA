@@ -115,3 +115,12 @@
 - Motivation : le plan directeur demande une lecture OCR contrôlable avec vitesse réglable. Les segments précédent/répéter/suite existaient déjà ; la vitesse restait une limite fonctionnelle directe.
 - Conséquence : les lectures suivantes utilisent la vitesse choisie, y compris les réponses VOXIA. Le réglage reste local et ne modifie pas le volume système.
 - Limite assumée : Android `TextToSpeech` ne fournit pas une vraie pause/reprise native du flux courant. `Annuler` stoppe toujours la voix ; pause/reprise fine reste à concevoir dans la refonte lecture.
+
+## ADR-0014 — Produire un AAB release dans la CI
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : le workflow GitHub Actions construit désormais `bundleRelease` en plus de `test`, `lintDebug` et `assembleDebug`, puis publie `app/build/outputs/bundle/release/app-release.aab` comme artefact `voxia-release-aab`.
+- Motivation : R-007 signale le risque d'un APK trop lourd pour le terrain. L'AAB est le format de distribution Android adapté aux splits et à une livraison plus fine que l'APK debug monolithique.
+- Conséquence : chaque push/PR vérifie que la source courante peut produire un AAB release. Le dépôt garde aussi l'APK debug pour les contrôles techniques rapides.
+- Limite assumée : cette décision ne mesure pas encore la taille réelle livrée par appareil et n'introduit pas de modules dynamiques ou modèles à la demande.

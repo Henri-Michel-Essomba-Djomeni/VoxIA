@@ -32,7 +32,7 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 - Bouton **PARLER À VOXIA** : reconnaissance vocale Android, avec repli possible vers le moteur système.
 - **IDENTIFIER** : ML Kit Image Labeling, OCR et codes-barres.
 - **SCANNER PRODUIT** : code-barres, recherche dans le catalogue local si une fiche sourcée existe, texte visible et catégorie probable ; sinon réponse explicite “produit inconnu”.
-- **LIRE TEXTE** : capture photo puis lecture OCR segmentée ; après une lecture réussie, utiliser les boutons Précédent/Répéter/Suite/Copier/Partager ou dire “lis la suite”, “segment suivant”, “segment précédent”, “répète”, “copie le texte” ou “partage le texte”.
+- **LIRE TEXTE** : capture photo puis lecture OCR segmentée ; après une lecture réussie, utiliser les boutons Précédent/Répéter/Suite/Plus lent/Normal/Plus vite/Copier/Partager ou dire “lis la suite”, “segment suivant”, “segment précédent”, “répète”, “lis plus vite”, “parle plus lentement”, “vitesse normale”, “copie le texte” ou “partage le texte”.
 - **TRADUIRE** : OCR, identification de langue et traduction ML Kit si le modèle requis est disponible.
 - Actions : ouvrir une application, préparer un appel dans le composeur, régler alarme/minuteur, lire date/heure/batterie, contrôler le volume.
 
@@ -47,13 +47,14 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 - La traduction peut télécharger des modèles ML Kit lors du premier usage.
 - Copier le texte OCR place le contenu dans le presse-papiers Android ; éviter cette action sur un document sensible pendant les tests partagés.
 - Le cadrage caméra n'est pas encore guidé par une boucle qualité robuste.
-- L'APK est lourd pour une distribution pilote ; l'objectif reste AAB, ABI et modules à la demande.
+- L'APK de baseline historique est lourd pour une distribution pilote ; la source courante génère désormais un AAB release en CI, mais la mesure de taille terrain et les modules à la demande restent à traiter.
 
 ## Vérifications obligatoires avant tout pilote
 
 - `./gradlew test`
 - `./gradlew lintDebug`
-- `./gradlew assembleDebug` ou build release signé selon le canal de test.
+- `./gradlew assembleDebug`
+- `./gradlew bundleRelease` ou build release signé selon le canal de test.
 - Installation sur au moins un téléphone ARM64 réel.
 - Test microphone en environnement calme et bruité.
 - Test caméra : faible lumière, reflets, petits caractères, image inclinée et document partiellement coupé.
@@ -75,6 +76,7 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 .\gradlew.bat test
 .\gradlew.bat lintDebug
 .\gradlew.bat assembleDebug
+.\gradlew.bat bundleRelease
 ```
 
-L'APK debug généré se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. Il sert au contrôle technique interne ; il ne remplace pas l'APK de baseline historique ni une release pilote signée.
+L'APK debug généré se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. L'AAB release se trouve dans `app/build/outputs/bundle/release/app-release.aab` ; sa signature dépend de la présence d'un `keystore.properties` local. Ces artefacts servent au contrôle technique interne ; ils ne remplacent pas l'APK de baseline historique ni une release pilote signée.

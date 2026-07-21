@@ -34,8 +34,17 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
+      - name: Build release AAB
+        run: ./gradlew bundleRelease
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: voxia-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxia-release-aab
+          path: app/build/outputs/bundle/release/app-release.aab

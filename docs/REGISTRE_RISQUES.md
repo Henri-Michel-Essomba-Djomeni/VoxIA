@@ -8,7 +8,7 @@
 | R-004 | Mauvaise action vocale exécutée | Élevé | Moyen | Confirmation orale ajoutée pour appel/alarme/rappel/ouverture d'app (`ConfirmationParser` + `VoiceAssistantService.requestConfirmation`) ; actions différées par permission purgées en cas de refus ; taux de fausse action toujours à mesurer en conditions réelles | En réduction |
 | R-005 | OCR inutilisable par mauvais cadrage | Élevé | Élevé | `FrameQualityAnalyzer` filtre les captures trop sombres/claires/floues avant OCR (premier incrément post-capture) ; guidage temps réel et mesure CER/WER réelle restent à faire | En réduction |
 | R-006 | STT fragile aux accents/bruits locaux | Élevé | Élevé | Collecte consentie, WER par sous-groupe | Ouvert |
-| R-007 | APK trop lourd pour le terrain | Moyen | Élevé | AAB, ABI, modèles à la demande | Ouvert |
+| R-007 | APK trop lourd pour le terrain | Moyen | Élevé | ABI filtrées `arm64-v8a`/`x86_64`, AAB release généré en CI ; mesure de taille terrain et modules à la demande restent à faire | En réduction |
 | R-008 | Produit présenté comme validé | Élevé | Moyen | Alpha interne, documents de limites | En réduction |
 | R-009 | Identification financière erronée | Très élevé | Moyen | Abstention, seuil strict, pas d'authentification | Non démarré |
 | R-010 | Accessibilité TalkBack incomplète | Élevé | Moyen | Descriptions accessibles synchronisées pour transcription/réponse, boutons moins fragiles à grande police ; tests TalkBack terrain toujours requis | En réduction |
