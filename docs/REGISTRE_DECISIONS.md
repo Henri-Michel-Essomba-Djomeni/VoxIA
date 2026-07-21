@@ -78,3 +78,13 @@
 - Motivation : le plan directeur demande une recherche produit par code-barres avec source et date, et interdit d'inventer prix, allergènes ou composition. L'ancien comportement répétait le code détecté sans distinguer produit connu et inconnu.
 - Conséquence : VOXIA peut être branché sur un catalogue local ou terrain plus tard sans changer le pipeline caméra. Tant qu'aucun catalogue validé n'est fourni, l'application reste honnête : elle reconnaît le code, mais ne prétend pas connaître le produit.
 - Vérification : `ProductCatalogTest` couvre le parsing TSV, le rejet des fiches sans source/date, la normalisation du code et les messages produit connu/inconnu.
+
+## ADR-0010 — Préparer la lecture OCR contrôlable par segments
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : `OCRResult.Success` expose désormais des segments de lecture construits par `DocumentTextSegmenter`. `VoiceAssistantService` conserve une `DocumentReadingSession` après OCR réussi, lit le premier segment avec position, et route les nouvelles intentions `READ_NEXT_SEGMENT` / `READ_PREVIOUS_SEGMENT` pour avancer ou revenir. `repeatLastResponse()` répète le segment courant lorsqu'une session existe.
+- Motivation : le plan directeur demande une lecture OCR segmentée et contrôlable. L'ancien comportement envoyait tout le texte reconnu au TTS, ce qui rendait les documents longs difficiles à corriger, répéter ou interrompre.
+- Conséquence : la base métier de navigation de lecture existe sans refonte UI. Les commandes vocales "lis la suite", "segment suivant", "segment précédent" et équivalents anglais sont reconnues par les règles locales.
+- Limite assumée : ce n'est pas encore une expérience complète avec boutons UI dédiés, surlignage, pause/reprise TTS native, vitesse réglable ou persistance d'historique. Ces éléments restent liés à la reconstruction UI/état de Phase 2.
+- Vérification : `DocumentReadingSessionTest` couvre navigation et segmentation ; `IntentClassifierEngineTest` couvre les nouvelles intentions.

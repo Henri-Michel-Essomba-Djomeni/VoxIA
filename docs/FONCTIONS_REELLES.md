@@ -12,6 +12,7 @@ Portée : état du dépôt au moment de l'assainissement Phase 0, puis premiers 
 | Intentions | Classification | Règles Kotlin dans `IntentClassifierEngine` | Couverture limitée des formulations naturelles |
 | Vision | Étiquetage générique | ML Kit Image Labeling | Non spécialisé VOXIA |
 | Vision | OCR latin | ML Kit Text Recognition | Sensible au cadrage, flou, lumière et reflets |
+| Vision/OCR | Lecture segmentée | `DocumentTextSegmenter` + `DocumentReadingSession` + commandes `READ_NEXT_SEGMENT` / `READ_PREVIOUS_SEGMENT` | Disponible après OCR réussi ; pas encore de boutons UI dédiés, pas de surlignage visuel, pas de pause/reprise TTS native |
 | Vision | Codes-barres | ML Kit Barcode Scanning + `ProductCatalog` local TSV | Catalogue local vide par défaut hors en-tête ; produit inconnu annoncé explicitement, sans prix/allergènes/composition inventés |
 | Traduction | Texte visible | ML Kit Language ID + Translate | Modèles possiblement téléchargés au premier usage |
 | Actions | Appel | `Intent.ACTION_DIAL` + confirmation orale VOXIA | L'utilisateur confirme deux fois : à VOXIA puis dans le composeur |

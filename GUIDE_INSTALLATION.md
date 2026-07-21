@@ -32,7 +32,7 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 - Bouton **PARLER À VOXIA** : reconnaissance vocale Android, avec repli possible vers le moteur système.
 - **IDENTIFIER** : ML Kit Image Labeling, OCR et codes-barres.
 - **SCANNER PRODUIT** : code-barres, recherche dans le catalogue local si une fiche sourcée existe, texte visible et catégorie probable ; sinon réponse explicite “produit inconnu”.
-- **LIRE TEXTE** : capture photo puis lecture OCR.
+- **LIRE TEXTE** : capture photo puis lecture OCR segmentée ; après une lecture réussie, dire “lis la suite”, “segment suivant”, “segment précédent” ou “répète”.
 - **TRADUIRE** : OCR, identification de langue et traduction ML Kit si le modèle requis est disponible.
 - Actions : ouvrir une application, préparer un appel dans le composeur, régler alarme/minuteur, lire date/heure/batterie, contrôler le volume.
 

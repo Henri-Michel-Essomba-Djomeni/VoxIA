@@ -14,6 +14,7 @@
 | R-010 | Accessibilité TalkBack incomplète | Élevé | Moyen | Tests avec utilisateurs cibles et matrice accessibilité | Ouvert |
 | R-011 | Dialogue de permission ou action différée incohérente | Moyen | Moyen | Rationale avant demande système, `POST_NOTIFICATIONS` séquencé après audio, purge des actions caméra/contacts refusées | En réduction |
 | R-012 | Produit identifié avec des informations inventées ou non sourcées | Élevé | Moyen | Catalogue local exigeant source/date, réponse explicite "produit inconnu", interdiction de prix/allergènes/composition sans source | En réduction |
+| R-013 | Lecture OCR longue impossible à contrôler | Moyen | Élevé | Segmentation OCR, session de lecture, commandes suivant/précédent/répéter | En réduction |
 
 ## Cadence de revue
 

@@ -24,6 +24,8 @@ interface VoxiaContext {
     // OCR (Dev3)
     fun loadOcrModule()
     fun captureAndRead()
+    fun readNextSegment()
+    fun readPreviousSegment()
     fun translateVisibleText()
 
     // Appel (Dev4)

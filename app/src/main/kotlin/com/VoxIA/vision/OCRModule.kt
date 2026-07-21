@@ -253,6 +253,7 @@ class OCRModule(private val context: Context) {
         }
 
         val structuredText = cleanedBlocks.joinToString(". ") { it }
+        val segments = DocumentTextSegmenter.segment(cleanedBlocks)
         val wordCount = structuredText.split("\\s+".toRegex()).size
         val estimatedReadingSeconds = (wordCount / 2.5).toInt() // ~150 mots/min
 
@@ -265,6 +266,7 @@ class OCRModule(private val context: Context) {
             rawText = rawText,
             structuredText = structuredText,
             voiceText = voiceIntro + structuredText,
+            segments = segments,
             blockCount = cleanedBlocks.size,
             wordCount = wordCount,
             estimatedReadingSeconds = estimatedReadingSeconds
@@ -288,6 +290,7 @@ sealed class OCRResult {
         val rawText: String,
         val structuredText: String,
         val voiceText: String,       // Texte prêt pour TTS
+        val segments: List<String>,
         val blockCount: Int,
         val wordCount: Int,
         val estimatedReadingSeconds: Int

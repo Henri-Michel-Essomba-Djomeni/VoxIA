@@ -25,6 +25,10 @@ object IntentMapper {
                 context.captureAndRead()
             }
 
+            Intent.READ_NEXT_SEGMENT -> context.readNextSegment()
+
+            Intent.READ_PREVIOUS_SEGMENT -> context.readPreviousSegment()
+
             Intent.TRANSLATE_TEXT -> context.translateVisibleText()
 
             Intent.CALL_CONTACT -> {

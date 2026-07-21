@@ -34,8 +34,10 @@ import com.voxia.utils.ArithmeticEvaluator
 import com.voxia.utils.ConfirmationParser
 import com.voxia.utils.MemoryManager
 import com.voxia.utils.PrivacyLog
+import com.voxia.vision.DocumentReadingSession
 import com.voxia.vision.OCRModule
 import com.voxia.vision.OCRResult
+import com.voxia.vision.ReadingPosition
 import com.voxia.vision.TextTranslatorModule
 import com.voxia.vision.VisionModule
 import java.text.SimpleDateFormat
@@ -76,6 +78,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private var awaitingContactName = false
     private var activeActionToken = 0
     private var pendingConfirmation: (() -> Unit)? = null
+    private var readingSession: DocumentReadingSession? = null
 
     private val currentSpeechLanguage: SpeechLanguage
         get() = when (currentLanguage) {
@@ -228,6 +231,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private fun beginActiveAction(): Int {
         activeActionToken += 1
         releaseActiveModules()
+        readingSession = null
         return activeActionToken
     }
 
@@ -257,6 +261,10 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     }
 
     override fun repeatLastResponse() {
+        readingSession?.current()?.let {
+            speakReadingPosition(it)
+            return
+        }
         speak(lastResponse.first, lastResponse.second)
     }
 
@@ -385,7 +393,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
                 ocr.readDocument(if (currentLanguage == Language.FRENCH) "fr" else "en") { result ->
                     if (!isActiveAction(token)) return@readDocument
                     when (result) {
-                        is OCRResult.Success -> speak(result.voiceText, result.voiceText)
+                        is OCRResult.Success -> startDocumentReading(result)
                         is OCRResult.NoText -> speak(result.message, result.message)
                         is OCRResult.PoorQuality -> speak(result.message, result.message)
                         is OCRResult.Error -> speak(
@@ -397,6 +405,69 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
                 }
             }
         }
+    }
+
+    private fun startDocumentReading(result: OCRResult.Success) {
+        val session = DocumentReadingSession.fromSegments(result.segments)
+        if (session == null) {
+            speak(result.voiceText, result.voiceText)
+            return
+        }
+
+        readingSession = session
+        val position = session.current()
+        if (position == null) {
+            speak(result.voiceText, result.voiceText)
+        } else {
+            speakReadingPosition(position, result.wordCount)
+        }
+    }
+
+    override fun readNextSegment() {
+        val session = readingSession ?: run {
+            speak(
+                "Aucune lecture de document n'est en cours.",
+                "No document reading is in progress."
+            )
+            return
+        }
+        val next = session.next()
+        if (next == null) {
+            speak(
+                "Fin du texte. Dites précédent pour revenir ou répète pour relire ce segment.",
+                "End of text. Say previous to go back or repeat to hear this segment again."
+            )
+        } else {
+            speakReadingPosition(next)
+        }
+    }
+
+    override fun readPreviousSegment() {
+        val session = readingSession ?: run {
+            speak(
+                "Aucune lecture de document n'est en cours.",
+                "No document reading is in progress."
+            )
+            return
+        }
+        val previous = session.previous()
+        if (previous == null) {
+            speak(
+                "Vous êtes déjà au début du texte.",
+                "You are already at the beginning of the text."
+            )
+        } else {
+            speakReadingPosition(previous)
+        }
+    }
+
+    private fun speakReadingPosition(position: ReadingPosition, wordCount: Int? = null) {
+        val introFr = wordCount?.let { "J'ai détecté $it mots. " }.orEmpty()
+        val introEn = wordCount?.let { "I detected $it words. " }.orEmpty()
+        speak(
+            "${introFr}Segment ${position.number} sur ${position.total}. ${position.text}",
+            "${introEn}Segment ${position.number} of ${position.total}. ${position.text}"
+        )
     }
 
     private fun releaseOcr(module: OCRModule) {
@@ -646,6 +717,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
 
     override fun stopAll() {
         clearPendingInteraction()
+        readingSession = null
         invalidateActiveAction()
         releaseActiveModules()
         speechManager.cancelListening()

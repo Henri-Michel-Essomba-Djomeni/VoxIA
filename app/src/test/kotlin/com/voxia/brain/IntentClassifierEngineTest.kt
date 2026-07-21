@@ -23,6 +23,14 @@ class IntentClassifierEngineTest {
     }
 
     @Test
+    fun classify_recognizesDocumentReadingNavigation() {
+        assertEquals(Intent.READ_NEXT_SEGMENT, engine.classify("Lis la suite", Language.FRENCH).intent)
+        assertEquals(Intent.READ_NEXT_SEGMENT, engine.classify("continue reading", Language.ENGLISH).intent)
+        assertEquals(Intent.READ_PREVIOUS_SEGMENT, engine.classify("segment précédent", Language.FRENCH).intent)
+        assertEquals(Intent.READ_PREVIOUS_SEGMENT, engine.classify("previous segment", Language.ENGLISH).intent)
+    }
+
+    @Test
     fun classify_extractsAlarmTimeAndReminderDuration() {
         val alarm = engine.classify("Mets une alarme à 7 h 30", Language.FRENCH)
         assertEquals(Intent.SET_ALARM, alarm.intent)

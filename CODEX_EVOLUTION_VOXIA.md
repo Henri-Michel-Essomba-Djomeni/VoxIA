@@ -582,3 +582,50 @@ Résultats :
 - Le catalogue local ne contient pas encore de données terrain consenties/sourcées.
 - Pas de requête réseau ni cache Open Food Facts dans cet incrément.
 - Pas de validation caméra réelle sur un produit physique avec code-barres ; la vérification actuelle couvre la logique de catalogue et le build JVM.
+
+---
+
+# CODEX — Reprise P1 ciblée, lecture OCR segmentée
+
+Date : 2026-07-21
+Agent : Codex
+Portée : incrément P1 strictement aligné sur `PLAN_ACTION_VOXIA.md`, sans modification du plan directeur.
+
+## Objectif traité
+
+Avancer la lecture OCR contrôlable : remplacer progressivement la lecture monolithique d'un document par une session segmentée où l'utilisateur peut faire répéter le segment courant, avancer ou revenir.
+
+## Changements principaux
+
+- `DocumentReadingSession.kt` :
+  - nouveau modèle pur de session de lecture ;
+  - `DocumentTextSegmenter` groupe les blocs OCR courts et découpe les blocs longs selon un nombre maximal de mots.
+- `OCRModule.kt` :
+  - `OCRResult.Success` expose maintenant `segments` en plus du texte structuré complet.
+- `VoiceAssistantService.kt` :
+  - création d'une session après OCR réussi ;
+  - lecture du premier segment avec position `Segment n sur total` ;
+  - `repeatLastResponse()` répète le segment courant si une session de lecture existe ;
+  - `readNextSegment()` et `readPreviousSegment()` gèrent navigation et bornes.
+- Brain :
+  - ajout des intentions `READ_NEXT_SEGMENT` et `READ_PREVIOUS_SEGMENT` ;
+  - règles FR/EN : “lis la suite”, “segment suivant”, “continue reading”, “segment précédent”, “previous segment”.
+- Documentation :
+  - ADR-0010 ;
+  - risque R-013 ;
+  - inventaire fonctionnel et guide d'installation mis à jour.
+
+## Vérification
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+```
+
+Résultat : `BUILD SUCCESSFUL`. Les nouveaux tests couvrent `DocumentReadingSession`, `DocumentTextSegmenter` et les nouvelles intentions du classifieur.
+
+## Limites restantes
+
+- Pas encore de boutons UI dédiés suivant/précédent.
+- Pas de pause/reprise TTS native ; le bouton Annuler stoppe la voix courante mais la reprise reste vocale.
+- Pas de validation appareil sur une capture OCR longue réelle.
