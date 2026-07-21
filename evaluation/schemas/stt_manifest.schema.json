@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VOXIA STT Manifest Record",
+  "type": "object",
+  "required": ["sample_id", "reference_text", "hypothesis_text"],
+  "properties": {
+    "sample_id": { "type": "string" },
+    "participant_id": { "type": "string" },
+    "engine": { "type": "string" },
+    "device_model": { "type": "string" },
+    "os_version": { "type": "string" },
+    "accent": { "type": "string" },
+    "noise": { "type": "string" },
+    "reference_text": { "type": "string" },
+    "hypothesis_text": { "type": "string" },
+    "semantic_success": { "type": ["boolean", "string"] },
+    "first_text_ms": { "type": ["number", "string"] },
+    "final_text_ms": { "type": ["number", "string"] },
+    "real_time_factor": { "type": ["number", "string"] },
+    "ram_peak_mb": { "type": ["number", "string"] },
+    "battery_delta_pct": { "type": ["number", "string"] },
+    "initialization_failed": { "type": ["boolean", "string"] }
+  },
+  "additionalProperties": true
+}

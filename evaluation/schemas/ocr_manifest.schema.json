@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VOXIA OCR Manifest Record",
+  "type": "object",
+  "required": ["sample_id", "reference_text", "hypothesis_text"],
+  "properties": {
+    "sample_id": { "type": "string" },
+    "participant_id": { "type": "string" },
+    "document_type": { "type": "string" },
+    "lighting": { "type": "string" },
+    "device_model": { "type": "string" },
+    "reference_text": { "type": "string" },
+    "hypothesis_text": { "type": "string" },
+    "document_in_frame": { "type": ["boolean", "string"] },
+    "retakes": { "type": ["number", "string"] },
+    "seconds_to_useful_reading": { "type": ["number", "string"] },
+    "task_success": { "type": ["boolean", "string"] }
+  },
+  "additionalProperties": true
+}

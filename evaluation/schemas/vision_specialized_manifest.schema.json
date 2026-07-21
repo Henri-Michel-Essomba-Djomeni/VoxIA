@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VOXIA Specialized Vision Manifest Record",
+  "type": "object",
+  "required": ["sample_id", "domain", "class_label"],
+  "properties": {
+    "sample_id": { "type": "string" },
+    "participant_id": { "type": "string" },
+    "domain": { "type": "string" },
+    "class_label": { "type": "string" },
+    "device_model": { "type": "string" },
+    "lighting": { "type": "string" },
+    "accepted_by_quality_gate": { "type": ["boolean", "string"] },
+    "predicted_label": { "type": "string" },
+    "confidence": { "type": ["number", "string"] },
+    "is_out_of_distribution": { "type": ["boolean", "string"] },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

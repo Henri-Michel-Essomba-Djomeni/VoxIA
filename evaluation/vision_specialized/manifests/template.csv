@@ -1,0 +1,2 @@
+sample_id,participant_id,domain,class_label,device_model,lighting,accepted_by_quality_gate,predicted_label,confidence,is_out_of_distribution,notes
+example-001,pilot-000,template,template,template,template,true,template,1.0,false,"Exemple factice, ne pas utiliser comme métrique publique"

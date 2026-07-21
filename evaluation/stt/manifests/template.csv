@@ -1,0 +1,2 @@
+sample_id,participant_id,engine,device_model,os_version,accent,noise,reference_text,hypothesis_text,semantic_success,first_text_ms,final_text_ms,real_time_factor,ram_peak_mb,battery_delta_pct,initialization_failed,notes
+example-001,pilot-000,android_speech_recognizer,template,template,template,calme,"lis ce texte","lis ce texte",true,0,0,0,0,0,false,"Exemple factice, ne pas utiliser comme métrique publique"

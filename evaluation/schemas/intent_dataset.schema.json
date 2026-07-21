@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "VOXIA Intent Dataset Record",
+  "type": "object",
+  "required": ["sample_id", "utterance", "expected_intent"],
+  "properties": {
+    "sample_id": { "type": "string" },
+    "participant_id": { "type": "string" },
+    "utterance": { "type": "string" },
+    "expected_intent": { "type": "string" },
+    "language": { "type": "string" },
+    "subgroup": { "type": "string" },
+    "notes": { "type": "string" }
+  },
+  "additionalProperties": true
+}

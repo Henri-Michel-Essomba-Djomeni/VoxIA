@@ -1,0 +1,2 @@
+sample_id,participant_id,utterance,expected_intent,language,subgroup,notes
+example-001,pilot-000,"lis ce texte",READ_DOCUMENT,fr,template,"Exemple factice, ne pas utiliser comme métrique publique"

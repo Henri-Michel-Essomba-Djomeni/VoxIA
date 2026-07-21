@@ -1,0 +1,2 @@
+sample_id,participant_id,document_type,lighting,device_model,reference_text,hypothesis_text,document_in_frame,retakes,seconds_to_useful_reading,task_success,notes
+example-001,pilot-000,template,calme,template,"bonjour voxia","bonjour voxia",true,0,0,true,"Exemple factice, ne pas utiliser comme métrique publique"
