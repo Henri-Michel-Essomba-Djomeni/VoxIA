@@ -185,13 +185,6 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
         }
     }
 
-    fun getLoadedModel(language: SpeechLanguage = currentLanguage): Model? {
-        return when (language) {
-            SpeechLanguage.FR -> modelFR
-            SpeechLanguage.EN -> modelEN
-        }
-    }
-
     fun isCurrentlyListening() = isListening
 
     fun getCurrentLanguage() = currentLanguage

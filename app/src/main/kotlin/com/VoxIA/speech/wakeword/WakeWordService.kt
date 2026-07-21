@@ -17,6 +17,7 @@ class WakeWordService(private val context: Context) {
             TAG,
             "Wake word non embarqué dans l'alpha; utiliser le bouton Parler"
         )
+        onError?.invoke("Wake word non embarqué dans l'alpha")
         isActive = false
         return false
     }
