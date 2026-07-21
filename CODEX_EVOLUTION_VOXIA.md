@@ -913,3 +913,83 @@ Résultats :
 - `lintDebug` : succès.
 - `assembleDebug` : succès ; APK debug régénéré.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.
+
+---
+
+# CODEX — Clôture de reprise et relais propre
+
+Date : 2026-07-21
+Agent : Codex
+Portée : clôturer la reprise courante, documenter les commits réalisés et préparer une suite lisible sans modifier `PLAN_ACTION_VOXIA.md`.
+
+## Règle respectée
+
+`PLAN_ACTION_VOXIA.md` est resté intact pendant cette reprise. Il reste la stratégie cœur. L'avancement opérationnel a été tracé dans ce fichier, dans les registres sous `docs/`, dans `GUIDE_INSTALLATION.md`, dans le README Brain et dans la CI.
+
+## Commits de la reprise
+
+- `a649b06` — `Harden permission flow and CI checks`
+- `a2d9a65` — `Add sourced local product catalog`
+- `d77a749` — `Add segmented OCR reading controls`
+- `984b992` — `Improve main screen accessibility labels`
+- `f3efcce` — `Add visible OCR reading export controls`
+- `f9d7250` — `Warn before OCR text export`
+- `876ac52` — `Confirm voice OCR text export`
+- `41e7af9` — `Add OCR reading speed controls`
+- `3d25bca` — `Build release AAB in CI`
+- `97d5bd2` — `Add financial vision abstention`
+
+## État produit obtenu
+
+- Permissions : explications et refus mieux séquencés, `POST_NOTIFICATIONS` inclus côté Android 13+.
+- Produit : catalogue local sourcé, réponse explicite “produit inconnu”, aucune donnée produit inventée.
+- OCR : lecture segmentée, précédent/répéter/suite, export explicite, avertissement UI, confirmation vocale avant export et vitesse TTS réglable.
+- Accessibilité : zones transcription/réponse mieux nommées pour TalkBack, boutons moins fragiles aux grandes polices.
+- Distribution : CI avec tests, lint, APK debug et AAB release.
+- Sécurité financière : abstention explicite si l'analyse évoque argent, monnaie, coupure ou CFA/XAF/XOF ; aucune valeur ni authenticité annoncée.
+
+## État des risques
+
+- `R-002` : réduit.
+- `R-004`, `R-005`, `R-007`, `R-009`, `R-010`, `R-011`, `R-012`, `R-013`, `R-014` : en réduction avec incréments codés et documentés.
+- `R-006` : reste ouvert, car il exige une collecte consentie STT par accents/bruits/appareils. Aucun chiffre WER ne doit être annoncé sans dataset terrain vérifié.
+
+## Vérifications réalisées
+
+Dernière validation complète code Android :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultat : succès ; 35 tests uniques, debug + release, 70 exécutions, 0 échec, 0 erreur, 0 ignoré.
+
+Validation distribution :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat bundleRelease
+```
+
+Résultat : succès ; AAB généré dans `app/build/outputs/bundle/release/app-release.aab`, taille locale 47 557 649 octets.
+
+## Suite recommandée
+
+1. Collecter un premier jeu STT consenti avec accent, bruit, appareil, OS, texte de référence et transcription reconnue.
+2. Lancer `evaluation/stt/evaluate.py` uniquement sur ce jeu consenti, puis archiver le rapport dans `evaluation/stt/reports/`.
+3. Vérifier sur téléphone réel : TalkBack, grandes polices, refus/accord permissions, chooser Android, lecture OCR longue, vitesse TTS et abstention financière.
+4. Continuer ensuite sur les tâches localement actionnables : nettoyage optionnel du presse-papiers OCR, persistance du réglage de vitesse, mesure de taille AAB par appareil et future qualité STT.
+
+## Point de reprise exact
+
+Avant toute nouvelle tranche :
+
+```powershell
+git status --short
+git diff -- PLAN_ACTION_VOXIA.md
+```
+
+Le résultat attendu est un workspace propre et aucun diff sur `PLAN_ACTION_VOXIA.md`.

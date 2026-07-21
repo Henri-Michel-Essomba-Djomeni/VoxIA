@@ -21,6 +21,7 @@ La version source courante est marquée `0.1.0-alpha-internal`.
 ## Documents importants
 
 - Plan directeur : [PLAN_ACTION_VOXIA.md](PLAN_ACTION_VOXIA.md)
+- Journal de reprise Codex : [CODEX_EVOLUTION_VOXIA.md](CODEX_EVOLUTION_VOXIA.md)
 - Installation et limites de la baseline : [GUIDE_INSTALLATION.md](GUIDE_INSTALLATION.md)
 - Inventaire fonctionnel : [docs/FONCTIONS_REELLES.md](docs/FONCTIONS_REELLES.md)
 - Registre des risques : [docs/REGISTRE_RISQUES.md](docs/REGISTRE_RISQUES.md)
