@@ -22,6 +22,7 @@ Portée : état du dépôt au moment de l'assainissement Phase 0, puis premiers 
 | Actions | Volume/date/heure/batterie | API Android | Fonctions utilitaires simples, jugées non sensibles donc sans confirmation |
 | Permissions | Explication avant demande système | `MainActivity.showPermissionRationale` (RECORD_AUDIO, CAMERA, READ_CONTACTS, POST_NOTIFICATIONS Android 13+) | RECORD_AUDIO et CAMERA vérifiés sur émulateur (voir ADR-0007) ; POST_NOTIFICATIONS est séquencé après le microphone et limité à une demande par session ; READ_CONTACTS, POST_NOTIFICATIONS et chemins de refus restent à vérifier visuellement |
 | Permissions | Purge des actions différées refusées | `VoiceAssistantService.clearPendingPermissionAction()` appelé par les refus caméra/contacts | Protège contre une action vocale ancienne relancée après refus ; vérifié par compilation/lint, pas encore par test UI instrumenté |
+| Accessibilité | Zones dynamiques lisibles par TalkBack | `MainActivity.updateTranscript()` / `updateResponse()` synchronisent texte et `contentDescription` | Pas encore validé sur appareil avec TalkBack ; pas de parcours Switch Access |
 
 ## Fonctions partiellement implémentées (prototypes non calibrés, Phase 1)
 
@@ -32,6 +33,7 @@ Ces fonctions existent en code et sont couvertes par des tests unitaires, mais r
 | Actions | Confirmation avant action sensible | `VoiceAssistantService.requestConfirmation` + `ConfirmationParser` (`app/src/main/kotlin/com/VoxIA/utils/ConfirmationParser.kt`) gate `CALL_CONTACT`, `SET_ALARM`, `SET_REMINDER`, `OPEN_APP` | Une seule confirmation en attente à la fois (pas de pile) ; pas encore remonté au niveau `IntentMapper`/machine à états unique visée par l'architecture cible ; pas mesuré en conditions réelles (taux de fausse action) |
 | Vision/OCR | Contrôle qualité pré-capture | `FrameQualityAnalyzer` (`app/src/main/kotlin/com/VoxIA/vision/FrameQualityAnalyzer.kt`) rejette les images trop sombres, trop claires ou floues avant d'appeler ML Kit OCR, avec consigne vocale (`OCRResult.PoorQuality`) ; branché et vérifié en conditions réelles sur émulateur pour la branche `Acceptable` (voir ADR-0006) | Ce n'est PAS le guidage caméra temps réel du plan directeur (§7.4/Phase 2) : contrôle fait après la capture, pas de flux `ImageAnalysis` continu, pas de détection de cadrage/perspective/reflet localisé, seuils non calibrés sur le pilote OCR ; les branches de rejet (`TooDark`/`TooBright`/`TooBlurry`) ne sont vérifiées que par tests unitaires synthétiques, pas encore sur une vraie capture défavorable |
 | Vision/Produit | Réponse produit par code-barres | `ProductVoiceFormatter` interroge `ProductCatalog` lorsque `scanProduct()` détecte un code | Incrément sûr mais non complet : pas de catalogue terrain collecté, pas de source externe, pas de cache réseau, pas de validation utilisateur |
+| Accessibilité | Grandes tailles de texte | Boutons principaux en `wrap_content` + `minHeight` plutôt qu'hauteur fixe stricte | Réduit le risque de texte coupé à 200 %, mais nécessite encore une vérification visuelle multi-appareils |
 
 ## Fonctions absentes ou non validées
 

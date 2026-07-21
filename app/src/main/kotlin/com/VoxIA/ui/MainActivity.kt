@@ -51,7 +51,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             pendingCameraAction = null
             service?.clearPendingPermissionAction()
-            responseText.setText(R.string.permission_camera_denied)
+            updateResponse(R.string.permission_camera_denied)
         }
     }
 
@@ -59,12 +59,12 @@ class MainActivity : AppCompatActivity() {
         if (granted) service?.retryPendingPermissionAction()
         else {
             service?.clearPendingPermissionAction()
-            responseText.setText(R.string.permission_contacts_denied)
+            updateResponse(R.string.permission_contacts_denied)
         }
     }
 
     private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (!granted) responseText.setText(R.string.permission_notifications_denied)
+        if (!granted) updateResponse(R.string.permission_notifications_denied)
     }
 
     private val connection = object : ServiceConnection {
@@ -85,8 +85,8 @@ class MainActivity : AppCompatActivity() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
             intent.getStringExtra(VoiceAssistantService.EXTRA_STATE)?.let { stateText.text = localizedState(it) }
-            intent.getStringExtra(VoiceAssistantService.EXTRA_TRANSCRIPT)?.let { transcriptText.text = it }
-            intent.getStringExtra(VoiceAssistantService.EXTRA_RESPONSE)?.let { responseText.text = it }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_TRANSCRIPT)?.let { updateTranscript(it) }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_RESPONSE)?.let { updateResponse(it) }
             intent.getStringExtra(VoiceAssistantService.EXTRA_PERMISSION)?.let { permission ->
                 when (permission) {
                     Manifest.permission.CAMERA -> showPermissionRationale(
@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
                         R.string.permission_rationale_camera_message,
                         onDecline = {
                             service?.clearPendingPermissionAction()
-                            responseText.setText(R.string.permission_camera_denied)
+                            updateResponse(R.string.permission_camera_denied)
                         }
                     ) { cameraPermission.launch(permission) }
 
@@ -103,7 +103,7 @@ class MainActivity : AppCompatActivity() {
                         R.string.permission_rationale_contacts_message,
                         onDecline = {
                             service?.clearPendingPermissionAction()
-                            responseText.setText(R.string.permission_contacts_denied)
+                            updateResponse(R.string.permission_contacts_denied)
                         }
                     ) { contactsPermission.launch(permission) }
                 }
@@ -182,7 +182,7 @@ class MainActivity : AppCompatActivity() {
         showPermissionRationale(
             R.string.permission_rationale_notifications_title,
             R.string.permission_rationale_notifications_message,
-            onDecline = { responseText.setText(R.string.permission_notifications_denied) }
+            onDecline = { updateResponse(R.string.permission_notifications_denied) }
         ) { notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
     }
 
@@ -232,5 +232,27 @@ class MainActivity : AppCompatActivity() {
         "PROCESSING" -> getString(R.string.state_processing)
         "SPEAKING" -> getString(R.string.state_speaking)
         else -> getString(R.string.state_idle)
+    }
+
+    private fun updateTranscript(text: String) {
+        transcriptText.text = text
+        transcriptText.contentDescription = if (text.isBlank()) {
+            getString(R.string.accessibility_transcript_empty)
+        } else {
+            getString(R.string.accessibility_transcript_value, text)
+        }
+    }
+
+    private fun updateResponse(text: String) {
+        responseText.text = text
+        responseText.contentDescription = if (text.isBlank()) {
+            getString(R.string.accessibility_response_empty)
+        } else {
+            getString(R.string.accessibility_response_value, text)
+        }
+    }
+
+    private fun updateResponse(resId: Int) {
+        updateResponse(getString(resId))
     }
 }

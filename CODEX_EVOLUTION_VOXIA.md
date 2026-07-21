@@ -629,3 +629,49 @@ Résultat : `BUILD SUCCESSFUL`. Les nouveaux tests couvrent `DocumentReadingSess
 - Pas encore de boutons UI dédiés suivant/précédent.
 - Pas de pause/reprise TTS native ; le bouton Annuler stoppe la voix courante mais la reprise reste vocale.
 - Pas de validation appareil sur une capture OCR longue réelle.
+
+---
+
+# CODEX — Reprise P1 ciblée, accessibilité de l'écran principal
+
+Date : 2026-07-21
+Agent : Codex
+Portée : incrément P1 aligné sur l'objectif TalkBack et texte 200 % du plan directeur, sans modifier `PLAN_ACTION_VOXIA.md`.
+
+## Objectif traité
+
+Réduire les risques immédiats d'accessibilité sur l'écran XML actuel avant la refonte UI complète : les zones dynamiques doivent être mieux nommées pour TalkBack, et les boutons ne doivent pas dépendre d'une hauteur fixe fragile quand la taille de police augmente.
+
+## Changements principaux
+
+- `activity_main.xml` :
+  - `transcriptText`, `responseText` et le badge langue ont désormais des descriptions accessibles initiales ;
+  - les boutons principaux utilisent `wrap_content` avec `minHeight` et padding vertical, au lieu d'une hauteur strictement fixe.
+- `strings.xml` :
+  - nouvelles chaînes d'accessibilité pour transcription, réponse VOXIA et langue actuelle.
+- `MainActivity.kt` :
+  - ajout de `updateTranscript()` et `updateResponse()` ;
+  - les mises à jour venant du service et des refus de permission synchronisent texte visible et `contentDescription`.
+- Documentation :
+  - ADR-0011 ;
+  - R-010 passe de `Ouvert` à `En réduction` ;
+  - inventaire fonctionnel mis à jour.
+
+## Limites restantes
+
+- Pas de validation réelle TalkBack/Switch Access dans cette session.
+- Pas encore de refonte Compose/Material 3 ni de navigation dédiée.
+- Les tests UI instrumentés restent à créer pour vérifier les descriptions accessibles sur appareil.
+
+## Vérification
+
+Après arrêt des daemons Gradle qui s'étaient gênés lors d'un lancement parallèle, les commandes ont été relancées en séquence :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultat : 3/3 commandes réussies. `PLAN_ACTION_VOXIA.md` reste sans diff.

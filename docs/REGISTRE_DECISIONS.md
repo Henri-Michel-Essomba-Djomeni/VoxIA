@@ -88,3 +88,12 @@
 - Conséquence : la base métier de navigation de lecture existe sans refonte UI. Les commandes vocales "lis la suite", "segment suivant", "segment précédent" et équivalents anglais sont reconnues par les règles locales.
 - Limite assumée : ce n'est pas encore une expérience complète avec boutons UI dédiés, surlignage, pause/reprise TTS native, vitesse réglable ou persistance d'historique. Ces éléments restent liés à la reconstruction UI/état de Phase 2.
 - Vérification : `DocumentReadingSessionTest` couvre navigation et segmentation ; `IntentClassifierEngineTest` couvre les nouvelles intentions.
+
+## ADR-0011 — Rendre les zones dynamiques plus lisibles par TalkBack
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : `MainActivity` centralise les mises à jour de transcription et réponse dans `updateTranscript()` / `updateResponse()`, qui synchronisent le texte affiché et la `contentDescription`. Les boutons principaux passent d'une hauteur fixe stricte à `wrap_content` avec `minHeight` et padding vertical pour mieux supporter les grandes tailles de police.
+- Motivation : le plan directeur cible TalkBack et texte jusqu'à 200 %. Les zones dynamiques étaient visuellement mises à jour, mais leur libellé accessible n'indiquait pas clairement "transcription" ou "réponse VOXIA", et plusieurs boutons risquaient de couper le texte à grande taille.
+- Conséquence : le comportement est plus robuste pour TalkBack et grandes polices sans attendre la refonte Compose. Toute future zone dynamique doit suivre le même modèle : texte visible et description accessible mis à jour ensemble.
+- Limite assumée : non vérifié sur appareil réel avec TalkBack, Switch Access, paysage et police 200 %. Cela reste une réduction de risque, pas une certification accessibilité.

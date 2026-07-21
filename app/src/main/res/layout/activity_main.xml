@@ -43,6 +43,7 @@
             android:background="@color/transcript_bg"
             android:minHeight="64dp"
             android:padding="16dp"
+            android:contentDescription="@string/accessibility_transcript_empty"
             android:text="@string/transcript_placeholder"
             android:textColor="@color/white"
             android:textIsSelectable="true"
@@ -54,6 +55,7 @@
             android:layout_marginTop="12dp"
             android:accessibilityLiveRegion="polite"
             android:background="@color/response_bg"
+            android:contentDescription="@string/accessibility_response_empty"
             android:minHeight="72dp"
             android:padding="16dp"
             android:text="@string/response_placeholder"
@@ -63,8 +65,10 @@
         <Button
             android:id="@+id/speakButton"
             android:layout_width="match_parent"
-            android:layout_height="72dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
+            android:minHeight="72dp"
+            android:paddingVertical="14dp"
             android:text="@string/action_speak"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -73,24 +77,24 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/identifyButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:text="@string/action_identify" />
-            <Button android:id="@+id/productButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_product" />
+            <Button android:id="@+id/identifyButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="64dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_identify" />
+            <Button android:id="@+id/productButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="64dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_product" />
         </LinearLayout>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/readButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:text="@string/action_read" />
-            <Button android:id="@+id/translateButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_translate" />
+            <Button android:id="@+id/readButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="64dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_read" />
+            <Button android:id="@+id/translateButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="64dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_translate" />
         </LinearLayout>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
-            <Button android:id="@+id/helpButton" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:text="@string/action_help" />
-            <Button android:id="@+id/cancelButton" android:layout_width="0dp" android:layout_height="56dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_cancel" />
+            <Button android:id="@+id/helpButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_help" />
+            <Button android:id="@+id/cancelButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_cancel" />
         </LinearLayout>
         <TextView
             android:id="@+id/languageBadge"
@@ -99,6 +103,7 @@
             android:layout_gravity="center"
             android:layout_marginTop="16dp"
             android:background="@drawable/badge_language"
+            android:contentDescription="@string/accessibility_language_current_fr"
             android:paddingHorizontal="16dp"
             android:paddingVertical="6dp"
             android:text="@string/language_fr"
