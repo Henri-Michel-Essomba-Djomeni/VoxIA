@@ -127,8 +127,12 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.readPreviousButton).setOnClickListener { service?.readPreviousSegment() }
         findViewById<Button>(R.id.readRepeatButton).setOnClickListener { service?.repeatLastResponse() }
         findViewById<Button>(R.id.readNextButton).setOnClickListener { service?.readNextSegment() }
-        findViewById<Button>(R.id.copyTextButton).setOnClickListener { service?.copyLastReadingText() }
-        findViewById<Button>(R.id.shareTextButton).setOnClickListener { service?.shareLastReadingText() }
+        findViewById<Button>(R.id.copyTextButton).setOnClickListener {
+            showTextExportRationale { service?.copyLastReadingText() }
+        }
+        findViewById<Button>(R.id.shareTextButton).setOnClickListener {
+            showTextExportRationale { service?.shareLastReadingText() }
+        }
         findViewById<Button>(R.id.helpButton).setOnClickListener { service?.speakHelp() }
         findViewById<Button>(R.id.cancelButton).setOnClickListener { service?.cancelCurrentAction() }
 
@@ -209,6 +213,19 @@ class MainActivity : AppCompatActivity() {
                 dialog.dismiss()
                 onDecline()
             }
+            .show()
+    }
+
+    private fun showTextExportRationale(onProceed: () -> Unit) {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.text_export_privacy_title)
+            .setMessage(R.string.text_export_privacy_message)
+            .setCancelable(true)
+            .setPositiveButton(R.string.permission_dialog_continue) { dialog, _ ->
+                dialog.dismiss()
+                onProceed()
+            }
+            .setNegativeButton(R.string.permission_dialog_not_now) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 

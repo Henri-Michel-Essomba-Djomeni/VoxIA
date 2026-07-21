@@ -18,6 +18,8 @@
     <string name="action_read_next">Suite</string>
     <string name="action_copy_text">Copier</string>
     <string name="action_share_text">Partager</string>
+    <string name="text_export_privacy_title">Texte sensible</string>
+    <string name="text_export_privacy_message">Le texte reconnu peut contenir des informations personnelles. Continuer uniquement si vous acceptez de le placer dans une autre application ou zone système.</string>
     <string name="action_help">Aide</string>
     <string name="action_cancel">Annuler</string>
     <string name="language_fr">FR</string>

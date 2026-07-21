@@ -691,7 +691,8 @@ Rendre les fonctions de lecture segmentée réellement accessibles depuis l'inte
 ## Changements principaux
 
 - `activity_main.xml` / `strings.xml` :
-  - boutons `Précédent`, `Répéter`, `Suite`, `Copier`, `Partager`.
+  - boutons `Précédent`, `Répéter`, `Suite`, `Copier`, `Partager` ;
+  - avertissement confidentialité avant copie/partage déclenchés par bouton.
 - `MainActivity.kt` :
   - branchement des boutons vers `VoiceAssistantService`.
 - Brain :
@@ -709,7 +710,7 @@ Rendre les fonctions de lecture segmentée réellement accessibles depuis l'inte
 
 ## Limites restantes
 
-- Pas encore d'explication dédiée avant copie dans le presse-papiers.
+- Pas encore d'avertissement dédié pour les commandes vocales de copie/partage ; elles restent explicites par la commande prononcée.
 - Pas de nettoyage automatique du presse-papiers.
 - Pas de validation appareil du chooser Android dans cette tranche.
 
@@ -728,3 +729,18 @@ Résultats :
 - `lintDebug` : succès.
 - `assembleDebug` : succès ; APK debug régénéré.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.
+
+## Suite immédiate — avertissement confidentialité avant export UI
+
+Après relecture du risque R-014, ajout d'un avertissement UI avant les boutons `Copier` et `Partager`. Les commandes vocales restent explicites par la formulation de l'utilisateur, mais n'ont pas encore de confirmation additionnelle.
+
+Vérification relancée :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultat : 3/3 commandes réussies, et `PLAN_ACTION_VOXIA.md` reste sans diff.

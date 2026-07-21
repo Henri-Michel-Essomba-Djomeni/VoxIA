@@ -13,7 +13,7 @@ Portée : état du dépôt au moment de l'assainissement Phase 0, puis premiers 
 | Vision | Étiquetage générique | ML Kit Image Labeling | Non spécialisé VOXIA |
 | Vision | OCR latin | ML Kit Text Recognition | Sensible au cadrage, flou, lumière et reflets |
 | Vision/OCR | Lecture segmentée | `DocumentTextSegmenter` + `DocumentReadingSession` + commandes/boutons précédent, répéter et suite | Disponible après OCR réussi ; pas de surlignage visuel, pas de pause/reprise TTS native |
-| Vision/OCR | Copier ou partager le dernier texte reconnu | Boutons UI et intentions `COPY_READING_TEXT` / `SHARE_READING_TEXT` | Action explicite utilisateur ; partage via chooser Android, aucun envoi silencieux ; presse-papiers Android à traiter comme zone sensible |
+| Vision/OCR | Copier ou partager le dernier texte reconnu | Boutons UI avec avertissement confidentialité + intentions `COPY_READING_TEXT` / `SHARE_READING_TEXT` | Action explicite utilisateur ; partage via chooser Android, aucun envoi silencieux ; presse-papiers Android à traiter comme zone sensible |
 | Vision | Codes-barres | ML Kit Barcode Scanning + `ProductCatalog` local TSV | Catalogue local vide par défaut hors en-tête ; produit inconnu annoncé explicitement, sans prix/allergènes/composition inventés |
 | Traduction | Texte visible | ML Kit Language ID + Translate | Modèles possiblement téléchargés au premier usage |
 | Actions | Appel | `Intent.ACTION_DIAL` + confirmation orale VOXIA | L'utilisateur confirme deux fois : à VOXIA puis dans le composeur |
