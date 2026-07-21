@@ -29,6 +29,12 @@ object IntentMapper {
 
             Intent.READ_PREVIOUS_SEGMENT -> context.readPreviousSegment()
 
+            Intent.READING_SPEED_UP -> context.increaseSpeechRate()
+
+            Intent.READING_SPEED_DOWN -> context.decreaseSpeechRate()
+
+            Intent.READING_SPEED_NORMAL -> context.resetSpeechRate()
+
             Intent.COPY_READING_TEXT -> context.requestCopyLastReadingText()
 
             Intent.SHARE_READING_TEXT -> context.requestShareLastReadingText()

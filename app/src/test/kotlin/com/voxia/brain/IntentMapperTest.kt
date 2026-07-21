@@ -36,6 +36,29 @@ class IntentMapperTest {
         assertEquals(listOf("speak"), context.calls)
     }
 
+    @Test
+    fun execute_routesSpeechRateCommands() {
+        val context = RecordingContext()
+
+        IntentMapper.execute(
+            PredictionResult(Intent.READING_SPEED_DOWN, Language.FRENCH, confidence = 0.95f),
+            context
+        )
+        IntentMapper.execute(
+            PredictionResult(Intent.READING_SPEED_NORMAL, Language.FRENCH, confidence = 0.95f),
+            context
+        )
+        IntentMapper.execute(
+            PredictionResult(Intent.READING_SPEED_UP, Language.FRENCH, confidence = 0.95f),
+            context
+        )
+
+        assertEquals(
+            listOf("decreaseSpeechRate", "resetSpeechRate", "increaseSpeechRate"),
+            context.calls
+        )
+    }
+
     private class RecordingContext : VoxiaContext {
         val calls = mutableListOf<String>()
 
@@ -61,6 +84,18 @@ class IntentMapperTest {
 
         override fun speakBatteryLevel() {
             calls += "speakBatteryLevel"
+        }
+
+        override fun increaseSpeechRate() {
+            calls += "increaseSpeechRate"
+        }
+
+        override fun decreaseSpeechRate() {
+            calls += "decreaseSpeechRate"
+        }
+
+        override fun resetSpeechRate() {
+            calls += "resetSpeechRate"
         }
 
         override fun switchLanguage(language: Language) {

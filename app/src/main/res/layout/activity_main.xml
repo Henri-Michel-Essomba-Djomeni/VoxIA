@@ -102,6 +102,15 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
+            <Button android:id="@+id/readSlowerButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_read_slower" />
+            <Button android:id="@+id/readNormalSpeedButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_read_normal_speed" />
+            <Button android:id="@+id/readFasterButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_read_faster" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
             <Button android:id="@+id/copyTextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_copy_text" />
             <Button android:id="@+id/shareTextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_share_text" />
         </LinearLayout>

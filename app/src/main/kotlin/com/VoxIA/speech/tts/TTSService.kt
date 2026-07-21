@@ -20,12 +20,17 @@ class TTSService(private val context: Context) {
 
     companion object {
         private const val TAG = "VoxIA_TTS"
+        private const val MIN_SPEECH_RATE = 0.7f
+        private const val MAX_SPEECH_RATE = 1.4f
+        private const val MIN_EFFECTIVE_RATE = 0.5f
+        private const val MAX_EFFECTIVE_RATE = 2.0f
     }
 
     private var tts: TextToSpeech? = null
     private var isReady = false
     private var initializationFailed = false
     private var currentLanguage = SpeechLanguage.FR
+    private var speechRateMultiplier = 1.0f
     private val queue = ArrayDeque<Pair<String, TTSOptions>>()
     private var isSpeaking = false
     private val callbacks = ConcurrentHashMap<String, () -> Unit>()
@@ -87,13 +92,14 @@ class TTSService(private val context: Context) {
     private fun speakInternal(text: String, options: TTSOptions) {
         isSpeaking = true
 
-        tts?.setSpeechRate(
-            when {
-                options.urgent -> 1.4f
-                options.slow -> 0.75f
-                else -> 1.0f
-            }
-        )
+        val optionRate = when {
+            options.urgent -> 1.4f
+            options.slow -> 0.75f
+            else -> 1.0f
+        }
+        val effectiveRate = (speechRateMultiplier * optionRate)
+            .coerceIn(MIN_EFFECTIVE_RATE, MAX_EFFECTIVE_RATE)
+        tts?.setSpeechRate(effectiveRate)
         tts?.setPitch(if (options.urgent) 1.2f else 1.0f)
 
         val utteranceId = UUID.randomUUID().toString()
@@ -154,4 +160,16 @@ class TTSService(private val context: Context) {
     fun isSpeaking() = isSpeaking
     fun isAvailable() = isReady
     fun getCurrentLanguage() = currentLanguage
+
+    fun adjustSpeechRate(delta: Float): Float {
+        speechRateMultiplier = (speechRateMultiplier + delta).coerceIn(MIN_SPEECH_RATE, MAX_SPEECH_RATE)
+        return speechRateMultiplier
+    }
+
+    fun resetSpeechRate(): Float {
+        speechRateMultiplier = 1.0f
+        return speechRateMultiplier
+    }
+
+    fun getSpeechRateMultiplier() = speechRateMultiplier
 }

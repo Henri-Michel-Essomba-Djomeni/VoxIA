@@ -626,8 +626,8 @@ Résultat : `BUILD SUCCESSFUL`. Les nouveaux tests couvrent `DocumentReadingSess
 
 ## Limites restantes
 
-- Pas encore de boutons UI dédiés suivant/précédent.
-- Pas de pause/reprise TTS native ; le bouton Annuler stoppe la voix courante mais la reprise reste vocale.
+- À cette étape, pas encore de boutons UI dédiés suivant/précédent ; traité ensuite dans la reprise contrôles OCR visibles.
+- Pas de pause/reprise TTS native ; le bouton Annuler stoppe la voix courante, et la vitesse réglable est traitée ensuite.
 - Pas de validation appareil sur une capture OCR longue réelle.
 
 ---
@@ -726,6 +726,56 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 Résultats :
 
 - `test` : succès ; 28 tests uniques, debug + release, 56 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `PLAN_ACTION_VOXIA.md` : aucun diff.
+
+---
+
+# CODEX — Reprise P1 ciblée, vitesse de lecture TTS
+
+Date : 2026-07-21
+Agent : Codex
+Portée : avancer la lecture OCR contrôlable demandée par le plan directeur sans modifier `PLAN_ACTION_VOXIA.md`.
+
+## Objectif traité
+
+Ajouter un contrôle de vitesse borné pour les lectures VOXIA, accessible par commandes vocales et par boutons, afin de réduire R-013 sans prétendre livrer la pause/reprise native.
+
+## Changements principaux
+
+- `TTSService` :
+  - multiplicateur global de vitesse borné de 70 % à 140 % ;
+  - application du multiplicateur aux prochaines synthèses vocales, en conservant les options `urgent` et `slow`.
+- `SpeechManager` / `VoiceAssistantService` :
+  - commandes augmenter, diminuer et réinitialiser la vitesse ;
+  - annonce vocale du pourcentage appliqué.
+- Brain :
+  - nouvelles intentions `READING_SPEED_UP`, `READING_SPEED_DOWN` et `READING_SPEED_NORMAL` ;
+  - règles FR/EN : “lis plus vite”, “parle plus lentement”, “vitesse normale”, “read faster”, “speak slower”, “normal speed”.
+- UI :
+  - boutons `Plus lent`, `Normal`, `Plus vite` proches des contrôles OCR.
+- Documentation :
+  - inventaire réel, ADR-0013, registre R-013 et README Brain mis à jour.
+
+## Limites restantes
+
+- Pas de pause/reprise TTS native du flux courant.
+- Pas de persistance du réglage de vitesse après redémarrage du service.
+- Pas de validation TalkBack réelle sur les nouveaux boutons dans cette tranche.
+
+## Vérification
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 32 tests uniques, debug + release, 64 exécutions, 0 échec, 0 erreur, 0 ignoré.
 - `lintDebug` : succès.
 - `assembleDebug` : succès ; APK debug régénéré.
 - `PLAN_ACTION_VOXIA.md` : aucun diff.

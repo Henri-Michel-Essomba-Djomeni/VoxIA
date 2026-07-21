@@ -86,7 +86,7 @@
 - Décision : `OCRResult.Success` expose désormais des segments de lecture construits par `DocumentTextSegmenter`. `VoiceAssistantService` conserve une `DocumentReadingSession` après OCR réussi, lit le premier segment avec position, et route les nouvelles intentions `READ_NEXT_SEGMENT` / `READ_PREVIOUS_SEGMENT` pour avancer ou revenir. `repeatLastResponse()` répète le segment courant lorsqu'une session existe.
 - Motivation : le plan directeur demande une lecture OCR segmentée et contrôlable. L'ancien comportement envoyait tout le texte reconnu au TTS, ce qui rendait les documents longs difficiles à corriger, répéter ou interrompre.
 - Conséquence : la base métier de navigation de lecture existe sans refonte UI. Les commandes vocales "lis la suite", "segment suivant", "segment précédent" et équivalents anglais sont reconnues par les règles locales.
-- Limite assumée : ce n'est pas encore une expérience complète avec boutons UI dédiés, surlignage, pause/reprise TTS native, vitesse réglable ou persistance d'historique. Ces éléments restent liés à la reconstruction UI/état de Phase 2.
+- Limite assumée : ce n'est pas encore une expérience complète avec surlignage, pause/reprise TTS native ou persistance d'historique. Ces éléments restent liés à la reconstruction UI/état de Phase 2.
 - Vérification : `DocumentReadingSessionTest` couvre navigation et segmentation ; `IntentClassifierEngineTest` couvre les nouvelles intentions.
 
 ## ADR-0011 — Rendre les zones dynamiques plus lisibles par TalkBack
@@ -106,3 +106,12 @@
 - Motivation : le plan directeur demande lecture segmentée avec répétition, copie et partage. Les commandes vocales seules ne suffisent pas pour un parcours accessible : les actions doivent aussi être visibles et activables à l'écran.
 - Conséquence : aucune donnée OCR n'est envoyée automatiquement. L'utilisateur déclenche explicitement copie ou partage, puis confirme à l'oral lorsque l'action vient d'une commande vocale ; VOXIA annonce lorsqu'aucun texte OCR récent n'est disponible.
 - Limite assumée : le presse-papiers Android peut être lu par d'autres surfaces système selon version et contexte. Pour une bêta, il faudra évaluer une option de nettoyage automatique du presse-papiers.
+
+## ADR-0013 — Ajouter un réglage borné de vitesse TTS
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : `TTSService` conserve un multiplicateur global de vitesse borné entre 70 % et 140 %. `SpeechManager` expose les commandes augmenter, diminuer et réinitialiser ; `VoiceAssistantService`, `IntentMapper` et l'écran principal les rendent accessibles par voix et boutons.
+- Motivation : le plan directeur demande une lecture OCR contrôlable avec vitesse réglable. Les segments précédent/répéter/suite existaient déjà ; la vitesse restait une limite fonctionnelle directe.
+- Conséquence : les lectures suivantes utilisent la vitesse choisie, y compris les réponses VOXIA. Le réglage reste local et ne modifie pas le volume système.
+- Limite assumée : Android `TextToSpeech` ne fournit pas une vraie pause/reprise native du flux courant. `Annuler` stoppe toujours la voix ; pause/reprise fine reste à concevoir dans la refonte lecture.

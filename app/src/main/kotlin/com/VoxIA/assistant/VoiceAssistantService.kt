@@ -45,6 +45,7 @@ import com.voxia.vision.VisionModule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToInt
 
 class VoiceAssistantService : LifecycleService(), VoxiaContext {
 
@@ -297,6 +298,26 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         speak(
             if (percent >= 0) "Batterie à $percent pour cent." else "Impossible de lire la batterie.",
             if (percent >= 0) "Battery at $percent percent." else "Unable to read battery level."
+        )
+    }
+
+    override fun increaseSpeechRate() {
+        announceSpeechRate(speechManager.increaseSpeechRate())
+    }
+
+    override fun decreaseSpeechRate() {
+        announceSpeechRate(speechManager.decreaseSpeechRate())
+    }
+
+    override fun resetSpeechRate() {
+        announceSpeechRate(speechManager.resetSpeechRate())
+    }
+
+    private fun announceSpeechRate(rate: Float) {
+        val percent = (rate * 100).roundToInt()
+        speak(
+            "Vitesse de lecture réglée à $percent pour cent.",
+            "Reading speed set to $percent percent."
         )
     }
 

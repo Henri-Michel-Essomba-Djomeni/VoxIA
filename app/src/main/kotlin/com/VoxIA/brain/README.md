@@ -7,7 +7,7 @@ Le module Brain reçoit le texte fourni par le moteur vocal Android, estime une 
 ## État actuel vérifié
 
 - `IntentClassifierEngine` utilise des règles déclarées en Kotlin.
-- `Intent` expose 28 intentions métier plus `FALLBACK`.
+- `Intent` expose 33 intentions métier plus `FALLBACK`.
 - Aucun `intent_classifier.tflite` n'est livré dans `app/src/main/assets`.
 - Le fichier `intent_vocab.json` existe mais n'est pas utilisé par le pipeline courant.
 - La confiance retournée par `PredictionResult.confidence` est une heuristique de score relatif, pas une probabilité statistique.
@@ -33,6 +33,7 @@ Le module Brain reçoit le texte fourni par le moteur vocal Android, estime une 
 | `SCAN_PRODUCT` | Code-barres/OCR/catégorie probable/catalogue local sourcé | Sans catalogue produit distant |
 | `READ_DOCUMENT` | ML Kit OCR latin + session segmentée | Capture unique, navigation segment suivant/précédent |
 | `READ_NEXT_SEGMENT`, `READ_PREVIOUS_SEGMENT` | `DocumentReadingSession` | Disponible après une lecture OCR réussie |
+| `READING_SPEED_UP`, `READING_SPEED_DOWN`, `READING_SPEED_NORMAL` | TTS Android via `SpeechManager` | Vitesse bornée entre 70 % et 140 %, applicable aux lectures suivantes |
 | `COPY_READING_TEXT`, `SHARE_READING_TEXT` | Presse-papiers Android / chooser Android | Confirmation orale VOXIA avant export vocal ; aucun envoi silencieux |
 | `TRANSLATE_TEXT` | ML Kit OCR + Translate | Modèles de traduction téléchargeables |
 | `CALL_CONTACT` | `Intent.ACTION_DIAL` | Confirmation orale VOXIA puis composeur, pas d'appel silencieux |

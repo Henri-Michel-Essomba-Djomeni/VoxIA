@@ -189,6 +189,10 @@ class SpeechManager(private val context: Context) {
 
     fun getState() = state
     fun getCurrentLanguage() = currentLanguage
+    fun increaseSpeechRate(): Float = tts.adjustSpeechRate(0.1f)
+    fun decreaseSpeechRate(): Float = tts.adjustSpeechRate(-0.1f)
+    fun resetSpeechRate(): Float = tts.resetSpeechRate()
+    fun getSpeechRateMultiplier(): Float = tts.getSpeechRateMultiplier()
 
     fun cancelListening() {
         stt.stopListening()

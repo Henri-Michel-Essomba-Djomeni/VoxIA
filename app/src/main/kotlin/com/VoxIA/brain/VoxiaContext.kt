@@ -11,6 +11,9 @@ interface VoxiaContext {
     fun speakTime()
     fun speakDate()
     fun speakBatteryLevel()
+    fun increaseSpeechRate()
+    fun decreaseSpeechRate()
+    fun resetSpeechRate()
 
     // Langue
     fun switchLanguage(language: Language)

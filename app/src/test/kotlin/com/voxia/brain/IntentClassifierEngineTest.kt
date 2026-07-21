@@ -39,6 +39,16 @@ class IntentClassifierEngineTest {
     }
 
     @Test
+    fun classify_recognizesSpeechRateControls() {
+        assertEquals(Intent.READING_SPEED_UP, engine.classify("Lis plus vite", Language.FRENCH).intent)
+        assertEquals(Intent.READING_SPEED_UP, engine.classify("read faster", Language.ENGLISH).intent)
+        assertEquals(Intent.READING_SPEED_DOWN, engine.classify("Parle plus lentement", Language.FRENCH).intent)
+        assertEquals(Intent.READING_SPEED_DOWN, engine.classify("speak slower", Language.ENGLISH).intent)
+        assertEquals(Intent.READING_SPEED_NORMAL, engine.classify("vitesse normale", Language.FRENCH).intent)
+        assertEquals(Intent.READING_SPEED_NORMAL, engine.classify("normal speed", Language.ENGLISH).intent)
+    }
+
+    @Test
     fun classify_extractsAlarmTimeAndReminderDuration() {
         val alarm = engine.classify("Mets une alarme à 7 h 30", Language.FRENCH)
         assertEquals(Intent.SET_ALARM, alarm.intent)

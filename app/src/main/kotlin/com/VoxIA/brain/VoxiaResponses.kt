@@ -12,9 +12,9 @@ object VoxiaResponses {
     // Réponses d'aide
     fun help(language: Language): Pair<String, String> = Pair(
         "Je peux identifier une image, scanner un produit, lire ou traduire un document, " +
-        "ouvrir une application, préparer un appel, calculer, régler une alarme, lire vos notifications et vous assister.",
+        "régler la vitesse de lecture, ouvrir une application, préparer un appel, calculer, régler une alarme, lire vos notifications et vous assister.",
         "I can identify an image, scan a product, read or translate a document, " +
-        "open an app, prepare a call, calculate, set an alarm, read notifications and assist you."
+        "adjust reading speed, open an app, prepare a call, calculate, set an alarm, read notifications and assist you."
     )
 
     // Réponses fallback

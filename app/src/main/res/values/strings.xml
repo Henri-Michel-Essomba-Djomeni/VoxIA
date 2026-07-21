@@ -16,6 +16,9 @@
     <string name="action_read_previous">Précédent</string>
     <string name="action_read_repeat">Répéter</string>
     <string name="action_read_next">Suite</string>
+    <string name="action_read_slower">Plus lent</string>
+    <string name="action_read_normal_speed">Normal</string>
+    <string name="action_read_faster">Plus vite</string>
     <string name="action_copy_text">Copier</string>
     <string name="action_share_text">Partager</string>
     <string name="text_export_privacy_title">Texte sensible</string>

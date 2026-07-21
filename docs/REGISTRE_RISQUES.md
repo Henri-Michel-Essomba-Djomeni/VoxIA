@@ -14,7 +14,7 @@
 | R-010 | Accessibilité TalkBack incomplète | Élevé | Moyen | Descriptions accessibles synchronisées pour transcription/réponse, boutons moins fragiles à grande police ; tests TalkBack terrain toujours requis | En réduction |
 | R-011 | Dialogue de permission ou action différée incohérente | Moyen | Moyen | Rationale avant demande système, `POST_NOTIFICATIONS` séquencé après audio, purge des actions caméra/contacts refusées | En réduction |
 | R-012 | Produit identifié avec des informations inventées ou non sourcées | Élevé | Moyen | Catalogue local exigeant source/date, réponse explicite "produit inconnu", interdiction de prix/allergènes/composition sans source | En réduction |
-| R-013 | Lecture OCR longue impossible à contrôler | Moyen | Élevé | Segmentation OCR, session de lecture, commandes et boutons suivant/précédent/répéter, copie/partage explicites | En réduction |
+| R-013 | Lecture OCR longue impossible à contrôler | Moyen | Élevé | Segmentation OCR, session de lecture, commandes et boutons suivant/précédent/répéter, vitesse réglable, copie/partage explicites | En réduction |
 | R-014 | Texte OCR sensible exposé via presse-papiers ou partage | Élevé | Moyen | Actions copie/partage explicites, avertissement UI avant bouton, confirmation orale avant export vocal, partage via chooser Android | En réduction |
 
 ## Cadence de revue

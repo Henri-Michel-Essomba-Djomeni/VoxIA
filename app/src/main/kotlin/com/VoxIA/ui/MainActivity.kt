@@ -127,6 +127,9 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.readPreviousButton).setOnClickListener { service?.readPreviousSegment() }
         findViewById<Button>(R.id.readRepeatButton).setOnClickListener { service?.repeatLastResponse() }
         findViewById<Button>(R.id.readNextButton).setOnClickListener { service?.readNextSegment() }
+        findViewById<Button>(R.id.readSlowerButton).setOnClickListener { service?.decreaseSpeechRate() }
+        findViewById<Button>(R.id.readNormalSpeedButton).setOnClickListener { service?.resetSpeechRate() }
+        findViewById<Button>(R.id.readFasterButton).setOnClickListener { service?.increaseSpeechRate() }
         findViewById<Button>(R.id.copyTextButton).setOnClickListener {
             showTextExportRationale { service?.copyLastReadingText() }
         }
