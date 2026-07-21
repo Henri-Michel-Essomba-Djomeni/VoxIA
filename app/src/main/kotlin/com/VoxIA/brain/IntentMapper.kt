@@ -29,9 +29,9 @@ object IntentMapper {
 
             Intent.READ_PREVIOUS_SEGMENT -> context.readPreviousSegment()
 
-            Intent.COPY_READING_TEXT -> context.copyLastReadingText()
+            Intent.COPY_READING_TEXT -> context.requestCopyLastReadingText()
 
-            Intent.SHARE_READING_TEXT -> context.shareLastReadingText()
+            Intent.SHARE_READING_TEXT -> context.requestShareLastReadingText()
 
             Intent.TRANSLATE_TEXT -> context.translateVisibleText()
 

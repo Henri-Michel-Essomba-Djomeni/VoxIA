@@ -26,8 +26,8 @@ interface VoxiaContext {
     fun captureAndRead()
     fun readNextSegment()
     fun readPreviousSegment()
-    fun copyLastReadingText()
-    fun shareLastReadingText()
+    fun requestCopyLastReadingText()
+    fun requestShareLastReadingText()
     fun translateVisibleText()
 
     // Appel (Dev4)

@@ -33,12 +33,13 @@ Le module Brain reçoit le texte fourni par le moteur vocal Android, estime une 
 | `SCAN_PRODUCT` | Code-barres/OCR/catégorie probable/catalogue local sourcé | Sans catalogue produit distant |
 | `READ_DOCUMENT` | ML Kit OCR latin + session segmentée | Capture unique, navigation segment suivant/précédent |
 | `READ_NEXT_SEGMENT`, `READ_PREVIOUS_SEGMENT` | `DocumentReadingSession` | Disponible après une lecture OCR réussie |
+| `COPY_READING_TEXT`, `SHARE_READING_TEXT` | Presse-papiers Android / chooser Android | Confirmation orale VOXIA avant export vocal ; aucun envoi silencieux |
 | `TRANSLATE_TEXT` | ML Kit OCR + Translate | Modèles de traduction téléchargeables |
 | `CALL_CONTACT` | `Intent.ACTION_DIAL` | Confirmation orale VOXIA puis composeur, pas d'appel silencieux |
 | `OPEN_APP` | Launcher Android | Confirmation orale VOXIA, recherche par libellé |
 | `SET_ALARM`, `SET_REMINDER` | `AlarmClock` | Confirmation orale VOXIA puis UI externe |
 
-`IntentMapper` lui-même ne gère pas la confirmation : elle est implémentée plus bas, dans `VoiceAssistantService` (`requestConfirmation` + `com.voxia.utils.ConfirmationParser`), pour les quatre intentions ci-dessus jugées sensibles. Voir ADR-0005 dans `docs/REGISTRE_DECISIONS.md`. Si une future intention modifie l'état du téléphone ou engage l'utilisateur (nouvel achat, envoi de message, etc.), elle doit passer par ce même mécanisme.
+`IntentMapper` lui-même ne gère pas la confirmation : elle est implémentée plus bas, dans `VoiceAssistantService` (`requestConfirmation` + `com.voxia.utils.ConfirmationParser`), pour les intentions sensibles listées ci-dessus. Voir ADR-0005 et ADR-0012 dans `docs/REGISTRE_DECISIONS.md`. Si une future intention modifie l'état du téléphone, expose une donnée privée ou engage l'utilisateur (nouvel achat, envoi de message, etc.), elle doit passer par ce même mécanisme.
 
 ## Évaluation attendue
 

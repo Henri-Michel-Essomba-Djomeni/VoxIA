@@ -475,7 +475,33 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         )
     }
 
-    override fun copyLastReadingText() {
+    override fun requestCopyLastReadingText() {
+        if (lastReadingText.isBlank()) {
+            copyLastReadingText()
+            return
+        }
+        requestConfirmation(
+            "Le texte reconnu peut contenir des informations personnelles. Copier dans le presse-papiers ? Dites oui ou non.",
+            "The recognized text may contain personal information. Copy it to the clipboard? Say yes or no."
+        ) {
+            copyLastReadingText()
+        }
+    }
+
+    override fun requestShareLastReadingText() {
+        if (lastReadingText.isBlank()) {
+            shareLastReadingText()
+            return
+        }
+        requestConfirmation(
+            "Le texte reconnu peut contenir des informations personnelles. Partager avec une autre application ? Dites oui ou non.",
+            "The recognized text may contain personal information. Share it with another app? Say yes or no."
+        ) {
+            shareLastReadingText()
+        }
+    }
+
+    fun copyLastReadingText() {
         if (lastReadingText.isBlank()) {
             speak(
                 "Aucun texte OCR récent à copier.",
@@ -491,7 +517,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         )
     }
 
-    override fun shareLastReadingText() {
+    fun shareLastReadingText() {
         if (lastReadingText.isBlank()) {
             speak(
                 "Aucun texte OCR récent à partager.",

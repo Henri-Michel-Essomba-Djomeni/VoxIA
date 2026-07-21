@@ -710,7 +710,7 @@ Rendre les fonctions de lecture segmentée réellement accessibles depuis l'inte
 
 ## Limites restantes
 
-- Pas encore d'avertissement dédié pour les commandes vocales de copie/partage ; elles restent explicites par la commande prononcée.
+- Confirmation orale des commandes vocales de copie/partage traitée dans la suite immédiate ci-dessous.
 - Pas de nettoyage automatique du presse-papiers.
 - Pas de validation appareil du chooser Android dans cette tranche.
 
@@ -732,7 +732,7 @@ Résultats :
 
 ## Suite immédiate — avertissement confidentialité avant export UI
 
-Après relecture du risque R-014, ajout d'un avertissement UI avant les boutons `Copier` et `Partager`. Les commandes vocales restent explicites par la formulation de l'utilisateur, mais n'ont pas encore de confirmation additionnelle.
+Après relecture du risque R-014, ajout d'un avertissement UI avant les boutons `Copier` et `Partager`. Les commandes vocales restent explicites par la formulation de l'utilisateur ; la confirmation orale dédiée est traitée dans la tranche suivante.
 
 Vérification relancée :
 
@@ -744,3 +744,30 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 ```
 
 Résultat : 3/3 commandes réussies, et `PLAN_ACTION_VOXIA.md` reste sans diff.
+
+## Suite immédiate — confirmation orale avant export OCR vocal
+
+Pour réduire davantage R-014, les intentions vocales `COPY_READING_TEXT` et `SHARE_READING_TEXT` ne déclenchent plus directement le presse-papiers ou le chooser Android. `IntentMapper` route maintenant vers des demandes de confirmation dédiées, et `VoiceAssistantService` demande un oui/non avant d'exécuter l'export lorsque du texte OCR récent existe.
+
+Différence volontaire entre UI et voix :
+
+- bouton `Copier` / `Partager` : avertissement visuel, puis action directe après validation ;
+- commande vocale : prompt TTS de confidentialité, puis action seulement après confirmation positive.
+
+Test ajouté : `IntentMapperTest` vérifie que les intentions d'export passent par `requestCopyLastReadingText()` et `requestShareLastReadingText()`, et qu'une faible confiance demande une clarification sans export.
+
+Vérification relancée :
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 30 tests uniques, debug + release, 60 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `PLAN_ACTION_VOXIA.md` : aucun diff.
