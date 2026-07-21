@@ -3,6 +3,8 @@ package com.voxia.assistant
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.ContentResolver
 import android.content.Intent
 import android.content.IntentFilter
@@ -79,6 +81,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private var activeActionToken = 0
     private var pendingConfirmation: (() -> Unit)? = null
     private var readingSession: DocumentReadingSession? = null
+    private var lastReadingText: String = ""
 
     private val currentSpeechLanguage: SpeechLanguage
         get() = when (currentLanguage) {
@@ -232,6 +235,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         activeActionToken += 1
         releaseActiveModules()
         readingSession = null
+        lastReadingText = ""
         return activeActionToken
     }
 
@@ -415,6 +419,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         }
 
         readingSession = session
+        lastReadingText = result.structuredText
         val position = session.current()
         if (position == null) {
             speak(result.voiceText, result.voiceText)
@@ -467,6 +472,44 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         speak(
             "${introFr}Segment ${position.number} sur ${position.total}. ${position.text}",
             "${introEn}Segment ${position.number} of ${position.total}. ${position.text}"
+        )
+    }
+
+    override fun copyLastReadingText() {
+        if (lastReadingText.isBlank()) {
+            speak(
+                "Aucun texte OCR récent à copier.",
+                "No recent OCR text to copy."
+            )
+            return
+        }
+        val clipboard = getSystemService(ClipboardManager::class.java)
+        clipboard.setPrimaryClip(ClipData.newPlainText("VOXIA OCR", lastReadingText))
+        speak(
+            "Texte reconnu copié dans le presse-papiers.",
+            "Recognized text copied to the clipboard."
+        )
+    }
+
+    override fun shareLastReadingText() {
+        if (lastReadingText.isBlank()) {
+            speak(
+                "Aucun texte OCR récent à partager.",
+                "No recent OCR text to share."
+            )
+            return
+        }
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, lastReadingText)
+        }
+        val chooser = Intent.createChooser(sendIntent, "Partager le texte VOXIA").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(chooser)
+        speak(
+            "Choisissez l'application avec laquelle partager le texte.",
+            "Choose the app to share the text with."
         )
     }
 
@@ -718,6 +761,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     override fun stopAll() {
         clearPendingInteraction()
         readingSession = null
+        lastReadingText = ""
         invalidateActiveAction()
         releaseActiveModules()
         speechManager.cancelListening()

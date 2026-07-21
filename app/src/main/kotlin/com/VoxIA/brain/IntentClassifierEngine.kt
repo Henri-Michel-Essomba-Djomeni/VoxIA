@@ -21,6 +21,8 @@ class IntentClassifierEngine {
             rule(Intent.READ_DOCUMENT, "lis ce document", "lis ce texte", "qu est ce qui est ecrit", "lecture document", "read this document", "read this text", "read aloud"),
             rule(Intent.READ_NEXT_SEGMENT, "lis la suite", "segment suivant", "continue la lecture", "next segment", "continue reading", "read next"),
             rule(Intent.READ_PREVIOUS_SEGMENT, "segment precedent", "lis le precedent", "retour lecture", "previous segment", "read previous", "go back"),
+            rule(Intent.COPY_READING_TEXT, "copie le texte", "copie la lecture", "copy text", "copy reading"),
+            rule(Intent.SHARE_READING_TEXT, "partage le texte", "partage la lecture", "share text", "share reading"),
             rule(Intent.CALL_CONTACT, "appelle", "appel", "contacte", "telephone a", "call", "phone"),
             rule(Intent.SWITCH_TO_ENGLISH, "parle anglais", "passe en anglais", "switch to english", "speak english"),
             rule(Intent.SWITCH_TO_FRENCH, "parle francais", "passe en francais", "switch to french", "speak french"),
@@ -60,6 +62,8 @@ class IntentClassifierEngine {
             ),
             Intent.READ_NEXT_SEGMENT to setOf("suite", "suivant", "continue", "continuer", "next segment", "continue reading"),
             Intent.READ_PREVIOUS_SEGMENT to setOf("precedent", "precedente", "retour", "previous segment", "read previous"),
+            Intent.COPY_READING_TEXT to setOf("copie", "copy reading", "copy text", "clipboard"),
+            Intent.SHARE_READING_TEXT to setOf("partage", "partager", "share reading", "share text"),
             Intent.CALL_CONTACT to setOf(
                 "appelle", "appel", "appeler", "appellez", "telephone", "tel", "call", "phone",
                 "contact", "contacte", "contacter", "joindre", "compose"

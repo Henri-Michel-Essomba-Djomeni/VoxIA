@@ -93,6 +93,23 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:orientation="horizontal">
+            <Button android:id="@+id/readPreviousButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_read_previous" />
+            <Button android:id="@+id/readRepeatButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_read_repeat" />
+            <Button android:id="@+id/readNextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_read_next" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+            <Button android:id="@+id/copyTextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_copy_text" />
+            <Button android:id="@+id/shareTextButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_share_text" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
             <Button android:id="@+id/helpButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_weight="1" android:text="@string/action_help" />
             <Button android:id="@+id/cancelButton" android:layout_width="0dp" android:layout_height="wrap_content" android:minHeight="56dp" android:paddingVertical="10dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_cancel" />
         </LinearLayout>

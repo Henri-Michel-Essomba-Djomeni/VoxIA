@@ -97,3 +97,12 @@
 - Motivation : le plan directeur cible TalkBack et texte jusqu'à 200 %. Les zones dynamiques étaient visuellement mises à jour, mais leur libellé accessible n'indiquait pas clairement "transcription" ou "réponse VOXIA", et plusieurs boutons risquaient de couper le texte à grande taille.
 - Conséquence : le comportement est plus robuste pour TalkBack et grandes polices sans attendre la refonte Compose. Toute future zone dynamique doit suivre le même modèle : texte visible et description accessible mis à jour ensemble.
 - Limite assumée : non vérifié sur appareil réel avec TalkBack, Switch Access, paysage et police 200 %. Cela reste une réduction de risque, pas une certification accessibilité.
+
+## ADR-0012 — Exposer les contrôles OCR et l'export texte comme actions explicites
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : l'écran principal ajoute des boutons `Précédent`, `Répéter`, `Suite`, `Copier` et `Partager` pour le dernier texte OCR. Les commandes vocales `COPY_READING_TEXT` et `SHARE_READING_TEXT` complètent les boutons. Le partage utilise le chooser Android ; la copie utilise le presse-papiers système.
+- Motivation : le plan directeur demande lecture segmentée avec répétition, copie et partage. Les commandes vocales seules ne suffisent pas pour un parcours accessible : les actions doivent aussi être visibles et activables à l'écran.
+- Conséquence : aucune donnée OCR n'est envoyée automatiquement. L'utilisateur déclenche explicitement copie ou partage ; VOXIA annonce lorsqu'aucun texte OCR récent n'est disponible.
+- Limite assumée : le presse-papiers Android peut être lu par d'autres surfaces système selon version et contexte. Pour une bêta, il faudra ajouter une explication confidentialité dédiée et éventuellement une option de nettoyage automatique.

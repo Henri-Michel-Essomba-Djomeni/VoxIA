@@ -31,6 +31,14 @@ class IntentClassifierEngineTest {
     }
 
     @Test
+    fun classify_recognizesDocumentReadingExportCommands() {
+        assertEquals(Intent.COPY_READING_TEXT, engine.classify("Copie le texte", Language.FRENCH).intent)
+        assertEquals(Intent.COPY_READING_TEXT, engine.classify("copy reading", Language.ENGLISH).intent)
+        assertEquals(Intent.SHARE_READING_TEXT, engine.classify("Partage la lecture", Language.FRENCH).intent)
+        assertEquals(Intent.SHARE_READING_TEXT, engine.classify("share text", Language.ENGLISH).intent)
+    }
+
+    @Test
     fun classify_extractsAlarmTimeAndReminderDuration() {
         val alarm = engine.classify("Mets une alarme à 7 h 30", Language.FRENCH)
         assertEquals(Intent.SET_ALARM, alarm.intent)

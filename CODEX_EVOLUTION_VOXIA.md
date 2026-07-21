@@ -675,3 +675,56 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 ```
 
 Résultat : 3/3 commandes réussies. `PLAN_ACTION_VOXIA.md` reste sans diff.
+
+---
+
+# CODEX — Reprise P1 ciblée, contrôles OCR visibles et export explicite
+
+Date : 2026-07-21
+Agent : Codex
+Portée : compléter la lecture OCR contrôlable avec boutons visibles et export explicite, sans modification du plan directeur.
+
+## Objectif traité
+
+Rendre les fonctions de lecture segmentée réellement accessibles depuis l'interface, et ajouter copie/partage du dernier texte OCR sans envoi automatique ni donnée inventée.
+
+## Changements principaux
+
+- `activity_main.xml` / `strings.xml` :
+  - boutons `Précédent`, `Répéter`, `Suite`, `Copier`, `Partager`.
+- `MainActivity.kt` :
+  - branchement des boutons vers `VoiceAssistantService`.
+- Brain :
+  - nouvelles intentions `COPY_READING_TEXT` et `SHARE_READING_TEXT` ;
+  - règles FR/EN : “copie le texte”, “copy reading”, “partage le texte”, “share text”.
+- `VoiceAssistantService.kt` :
+  - conserve `lastReadingText` après OCR réussi ;
+  - `copyLastReadingText()` place le texte reconnu dans le presse-papiers ;
+  - `shareLastReadingText()` ouvre le chooser Android avec `ACTION_SEND` ;
+  - si aucun OCR récent n'existe, VOXIA l'annonce explicitement.
+- Documentation :
+  - ADR-0012 ;
+  - R-014 sur le risque presse-papiers/partage ;
+  - guide d'installation et inventaire réel mis à jour.
+
+## Limites restantes
+
+- Pas encore d'explication dédiée avant copie dans le presse-papiers.
+- Pas de nettoyage automatique du presse-papiers.
+- Pas de validation appareil du chooser Android dans cette tranche.
+
+## Vérification
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 28 tests uniques, debug + release, 56 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `PLAN_ACTION_VOXIA.md` : aucun diff.

@@ -13,6 +13,11 @@
     <string name="action_product">Scanner produit</string>
     <string name="action_read">Lire texte</string>
     <string name="action_translate">Traduire</string>
+    <string name="action_read_previous">Précédent</string>
+    <string name="action_read_repeat">Répéter</string>
+    <string name="action_read_next">Suite</string>
+    <string name="action_copy_text">Copier</string>
+    <string name="action_share_text">Partager</string>
     <string name="action_help">Aide</string>
     <string name="action_cancel">Annuler</string>
     <string name="language_fr">FR</string>

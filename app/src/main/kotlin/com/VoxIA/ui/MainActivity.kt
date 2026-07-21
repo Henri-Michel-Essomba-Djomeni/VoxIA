@@ -124,6 +124,11 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.productButton).setOnClickListener { withCamera { service?.scanProduct() } }
         findViewById<Button>(R.id.readButton).setOnClickListener { withCamera { service?.captureAndRead() } }
         findViewById<Button>(R.id.translateButton).setOnClickListener { withCamera { service?.translateVisibleText() } }
+        findViewById<Button>(R.id.readPreviousButton).setOnClickListener { service?.readPreviousSegment() }
+        findViewById<Button>(R.id.readRepeatButton).setOnClickListener { service?.repeatLastResponse() }
+        findViewById<Button>(R.id.readNextButton).setOnClickListener { service?.readNextSegment() }
+        findViewById<Button>(R.id.copyTextButton).setOnClickListener { service?.copyLastReadingText() }
+        findViewById<Button>(R.id.shareTextButton).setOnClickListener { service?.shareLastReadingText() }
         findViewById<Button>(R.id.helpButton).setOnClickListener { service?.speakHelp() }
         findViewById<Button>(R.id.cancelButton).setOnClickListener { service?.cancelCurrentAction() }
 
