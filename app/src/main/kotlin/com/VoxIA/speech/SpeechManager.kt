@@ -1,13 +1,13 @@
-package com.VoxIA.speech
+package com.voxia.speech
 
 import android.content.Context
-import android.util.Log
-import com.VoxIA.speech.stt.SpeechLanguage
-import com.VoxIA.speech.stt.VoskSTTService
-import com.VoxIA.speech.stt.STTResult
-import com.VoxIA.speech.tts.TTSService
-import com.VoxIA.speech.tts.TTSOptions
-import com.VoxIA.speech.wakeword.WakeWordService
+import com.voxia.utils.PrivacyLog
+import com.voxia.speech.stt.AndroidSpeechRecognizerSTTService
+import com.voxia.speech.stt.SpeechLanguage
+import com.voxia.speech.stt.STTResult
+import com.voxia.speech.tts.TTSService
+import com.voxia.speech.tts.TTSOptions
+import com.voxia.speech.wakeword.WakeWordService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -26,7 +26,7 @@ class SpeechManager(private val context: Context) {
         private const val TAG = "VoxIA_SpeechManager"
     }
 
-    private val stt = VoskSTTService(context)
+    private val stt = AndroidSpeechRecognizerSTTService(context)
     private val tts = TTSService(context)
     private val wakeWord = WakeWordService(context)
     private val scope = CoroutineScope(Dispatchers.IO)
@@ -36,6 +36,8 @@ class SpeechManager(private val context: Context) {
     private var onStateChange: ((SpeechState) -> Unit)? = null
     private var onTranscript: ((STTResult) -> Unit)? = null
     private var onCommandDetected: ((String, SpeechLanguage) -> Unit)? = null
+    private var wakeWordEnabled = false
+    private var recognitionInitialized = false
 
     // ─── INITIALISER TOUT ─────────────────────────────
     fun init(
@@ -51,54 +53,64 @@ class SpeechManager(private val context: Context) {
         // 1. Init TTS
         tts.init(
             onReady = {
-                // 2. Charger modèle STT FR par défaut
-                scope.launch {
-                    stt.loadModel(SpeechLanguage.FR)
-
-                    // 3. Démarrer wake word (modèle partagé avec STT)
-                    stt.getLoadedModel(SpeechLanguage.FR)?.let { wakeWord.setModel(it) }
-                    wakeWord.start()
-                    wakeWord.onWakeWord {
-                        onWakeWordDetected()
-                    }
-
-                    Log.d(TAG, "SpeechManager prêt ✓")
-                    tts.speak("VOXIA est prêt. Dites VOXIA pour commencer.")
-                    onReady()
-                }
+                initializeRecognition(onReady)
             },
             onError = {
-                Log.e(TAG, "Erreur init TTS")
+                PrivacyLog.e(TAG, "Erreur init TTS")
+                initializeRecognition(onReady)
             }
         )
     }
 
+    private fun initializeRecognition(onReady: () -> Unit) {
+        if (recognitionInitialized) return
+        recognitionInitialized = true
+        scope.launch {
+            val sttReady = stt.loadModel(SpeechLanguage.FR)
+            wakeWord.onWakeWord { onWakeWordDetected() }
+            wakeWordEnabled = wakeWord.start()
+            val readyMessage = when {
+                sttReady && wakeWordEnabled -> "VOXIA est prêt. Dites VOXIA ou utilisez le bouton Parler."
+                sttReady -> "VOXIA est prêt. Appuyez sur le bouton Parler."
+                else -> "La reconnaissance vocale n'est pas disponible. Utilisez les boutons de l'écran."
+            }
+            if (tts.isAvailable()) tts.speak(readyMessage)
+            onReady()
+        }
+    }
+
     // ─── WAKE WORD DÉTECTÉ ────────────────────────────
     private fun onWakeWordDetected() {
+        listenForCommand()
+    }
+
+    fun listenForCommand() {
         if (state != SpeechState.IDLE) return
 
-        setState(SpeechState.LISTENING)
+        wakeWord.pause()
         val prompt = if (currentLanguage == SpeechLanguage.FR) "Oui ?" else "Yes?"
-        tts.speak(prompt, TTSOptions(urgent = false))
+        if (tts.isAvailable()) {
+            setState(SpeechState.SPEAKING)
+            tts.speak(prompt, TTSOptions(onDone = { startCommandRecognition() }))
+        } else startCommandRecognition()
+    }
 
-        // Démarrer écoute STT
+    private fun startCommandRecognition() {
+        setState(SpeechState.LISTENING)
         stt.startListening(
-            language = currentLanguage,
-            onResult = { result ->
-                onTranscript?.invoke(result)
-                if (result.isFinal && result.text.isNotEmpty()) {
-                    handleTranscript(result)
+                language = currentLanguage,
+                onResult = { result ->
+                    onTranscript?.invoke(result)
+                    if (result.isFinal && result.text.isNotEmpty()) handleTranscript(result)
+                },
+                onError = { error ->
+                    PrivacyLog.e(TAG, "Erreur STT: $error")
+                    val msg = if (currentLanguage == SpeechLanguage.FR)
+                        "Je n'ai pas compris. Appuyez sur Parler pour réessayer."
+                    else "I didn't understand. Tap Speak to try again."
+                    speak(msg)
                 }
-            },
-            onError = { error ->
-                Log.e(TAG, "Erreur STT: $error")
-                val msg = if (currentLanguage == SpeechLanguage.FR)
-                    "Je n'ai pas compris. Réessayez."
-                else "I didn't understand. Please try again."
-                tts.speak(msg)
-                setState(SpeechState.IDLE)
-            }
-        )
+            )
     }
 
     // ─── TRAITER LA TRANSCRIPTION ─────────────────────
@@ -136,6 +148,7 @@ class SpeechManager(private val context: Context) {
             onDone = {
                 options.onDone?.invoke()
                 setState(SpeechState.IDLE)
+                resumeWakeWordIfAvailable()
             }
         ))
     }
@@ -147,7 +160,7 @@ class SpeechManager(private val context: Context) {
             tts.setLanguage(language)
             currentLanguage = language
             tts.announceLanguageSwitch(language)
-            Log.d(TAG, "Langue globale → $language")
+            PrivacyLog.d(TAG, "Langue globale -> $language")
         }
     }
 
@@ -163,7 +176,7 @@ class SpeechManager(private val context: Context) {
         }
 
         onStateChange?.invoke(newState)
-        Log.d(TAG, "État → $newState")
+        PrivacyLog.d(TAG, "État -> $newState")
     }
 
     // ─── LIBÉRER ──────────────────────────────────────
@@ -171,9 +184,20 @@ class SpeechManager(private val context: Context) {
         wakeWord.stop()
         stt.release()
         tts.release()
-        Log.d(TAG, "SpeechManager libéré")
+        PrivacyLog.d(TAG, "SpeechManager libéré")
     }
 
     fun getState() = state
     fun getCurrentLanguage() = currentLanguage
+
+    fun cancelListening() {
+        stt.stopListening()
+        tts.stop()
+        setState(SpeechState.IDLE)
+        resumeWakeWordIfAvailable()
+    }
+
+    private fun resumeWakeWordIfAvailable() {
+        if (wakeWordEnabled && !wakeWord.isRunning()) wakeWord.start()
+    }
 }

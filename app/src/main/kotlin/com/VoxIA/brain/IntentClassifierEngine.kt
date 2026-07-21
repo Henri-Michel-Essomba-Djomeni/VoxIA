@@ -1,358 +1,196 @@
 package com.voxia.brain
 
-import android.content.Context
-import android.util.Log
 import com.voxia.utils.LanguageDetector
+import com.voxia.utils.PrivacyLog
+import com.voxia.utils.TextNormalizer
 
-class IntentClassifierEngine(private val context: Context) {
+class IntentClassifierEngine {
 
     companion object {
         private const val TAG = "IntentClassifierEngine"
-        private const val CONFIDENCE_THRESHOLD = 0.70f
 
-        private val KEYWORD_MAP = mapOf(
-            // ── IDENTIFIER OBJET ──
-            "objet" to Intent.IDENTIFY_OBJECT,
-            "tiens" to Intent.IDENTIFY_OBJECT,
-            "quoi" to Intent.IDENTIFY_OBJECT,
-            "vois" to Intent.IDENTIFY_OBJECT,
-            "voir" to Intent.IDENTIFY_OBJECT,
-            "identifier" to Intent.IDENTIFY_OBJECT,
-            "identifie" to Intent.IDENTIFY_OBJECT,
-            "identify" to Intent.IDENTIFY_OBJECT,
-            "object" to Intent.IDENTIFY_OBJECT,
-            "holding" to Intent.IDENTIFY_OBJECT,
-            "main" to Intent.IDENTIFY_OBJECT,
-            "trouve" to Intent.IDENTIFY_OBJECT,
-            "trouver" to Intent.IDENTIFY_OBJECT,
-            "cherche" to Intent.IDENTIFY_OBJECT,
-            "chercher" to Intent.IDENTIFY_OBJECT,
-            "regarde" to Intent.IDENTIFY_OBJECT,
-            "regarder" to Intent.IDENTIFY_OBJECT,
-            "reconnais" to Intent.IDENTIFY_OBJECT,
-            "reconnaître" to Intent.IDENTIFY_OBJECT,
-            "reconnait" to Intent.IDENTIFY_OBJECT,
-            "montre" to Intent.IDENTIFY_OBJECT,
-            "montrer" to Intent.IDENTIFY_OBJECT,
-            "capture" to Intent.IDENTIFY_OBJECT,
-            "analyse" to Intent.IDENTIFY_OBJECT,
-            "analyser" to Intent.IDENTIFY_OBJECT,
-            "scan" to Intent.IDENTIFY_OBJECT,
-            "scanne" to Intent.IDENTIFY_OBJECT,
-            "what" to Intent.IDENTIFY_OBJECT,
+        private data class Rule(val intent: Intent, val phrases: List<String>)
 
-            // ── LIRE DOCUMENT ──
-            "lis" to Intent.READ_DOCUMENT,
-            "lire" to Intent.READ_DOCUMENT,
-            "dit" to Intent.READ_DOCUMENT,
-            "dis" to Intent.READ_DOCUMENT,
-            "document" to Intent.READ_DOCUMENT,
-            "texte" to Intent.READ_DOCUMENT,
-            "text" to Intent.READ_DOCUMENT,
-            "lettre" to Intent.READ_DOCUMENT,
-            "courrier" to Intent.READ_DOCUMENT,
-            "page" to Intent.READ_DOCUMENT,
-            "journal" to Intent.READ_DOCUMENT,
-            "livre" to Intent.READ_DOCUMENT,
-            "book" to Intent.READ_DOCUMENT,
-            "read" to Intent.READ_DOCUMENT,
-            "écrit" to Intent.READ_DOCUMENT,
-            "ecrit" to Intent.READ_DOCUMENT,
-            "écrire" to Intent.READ_DOCUMENT,
-            "affiche" to Intent.READ_DOCUMENT,
-            "panneau" to Intent.READ_DOCUMENT,
-            "enseigne" to Intent.READ_DOCUMENT,
-            "menus" to Intent.READ_DOCUMENT,
-            "menu" to Intent.READ_DOCUMENT,
-            "étiquette" to Intent.READ_DOCUMENT,
-            "etiquette" to Intent.READ_DOCUMENT,
+        private fun rule(intent: Intent, vararg phrases: String) = Rule(intent, phrases.toList())
 
-            // ── APPELER ──
-            "appelle" to Intent.CALL_CONTACT,
-            "appel" to Intent.CALL_CONTACT,
-            "appeler" to Intent.CALL_CONTACT,
-            "appellez" to Intent.CALL_CONTACT,
-            "téléphone" to Intent.CALL_CONTACT,
-            "telephone" to Intent.CALL_CONTACT,
-            "tel" to Intent.CALL_CONTACT,
-            "call" to Intent.CALL_CONTACT,
-            "phone" to Intent.CALL_CONTACT,
-            "contact" to Intent.CALL_CONTACT,
-            "contacte" to Intent.CALL_CONTACT,
-            "contacter" to Intent.CALL_CONTACT,
-            "joindre" to Intent.CALL_CONTACT,
-            "compose" to Intent.CALL_CONTACT,
-
-            // ── CHANGEMENT LANGUE ──
-            "anglais" to Intent.SWITCH_TO_ENGLISH,
-            "english" to Intent.SWITCH_TO_ENGLISH,
-            "switch" to Intent.SWITCH_TO_ENGLISH,
-            "anglaise" to Intent.SWITCH_TO_ENGLISH,
-            "en" to Intent.SWITCH_TO_ENGLISH,
-            "anglois" to Intent.SWITCH_TO_ENGLISH,
-
-            "français" to Intent.SWITCH_TO_FRENCH,
-            "francais" to Intent.SWITCH_TO_FRENCH,
-            "french" to Intent.SWITCH_TO_FRENCH,
-            "française" to Intent.SWITCH_TO_FRENCH,
-            "francaise" to Intent.SWITCH_TO_FRENCH,
-            "fr" to Intent.SWITCH_TO_FRENCH,
-
-            // ── HISTOIRE ──
-            "histoire" to Intent.TELL_STORY,
-            "raconte" to Intent.TELL_STORY,
-            "raconter" to Intent.TELL_STORY,
-            "story" to Intent.TELL_STORY,
-            "conte" to Intent.TELL_STORY,
-            "conter" to Intent.TELL_STORY,
-            "fable" to Intent.TELL_STORY,
-            "légende" to Intent.TELL_STORY,
-            "legende" to Intent.TELL_STORY,
-            "récit" to Intent.TELL_STORY,
-            "recit" to Intent.TELL_STORY,
-
-            // ── BLAGUE ──
-            "blague" to Intent.TELL_JOKE,
-            "joke" to Intent.TELL_JOKE,
-            "marrant" to Intent.TELL_JOKE,
-            "comique" to Intent.TELL_JOKE,
-            "fun" to Intent.TELL_JOKE,
-            "funny" to Intent.TELL_JOKE,
-            "humour" to Intent.TELL_JOKE,
-            "rire" to Intent.TELL_JOKE,
-            "ris" to Intent.TELL_JOKE,
-
-            // ── DÉCRIRE ENVIRONNEMENT ──
-            "décris" to Intent.DESCRIBE_SURROUNDINGS,
-            "décrire" to Intent.DESCRIBE_SURROUNDINGS,
-            "decris" to Intent.DESCRIBE_SURROUNDINGS,
-            "decrire" to Intent.DESCRIBE_SURROUNDINGS,
-            "describe" to Intent.DESCRIBE_SURROUNDINGS,
-            "surroundings" to Intent.DESCRIBE_SURROUNDINGS,
-            "environnement" to Intent.DESCRIBE_SURROUNDINGS,
-            "autour" to Intent.DESCRIBE_SURROUNDINGS,
-            "alentours" to Intent.DESCRIBE_SURROUNDINGS,
-            "ou" to Intent.DESCRIBE_SURROUNDINGS,
-            "suis" to Intent.DESCRIBE_SURROUNDINGS,
-            "trouve" to Intent.DESCRIBE_SURROUNDINGS,
-            "pièce" to Intent.DESCRIBE_SURROUNDINGS,
-            "piece" to Intent.DESCRIBE_SURROUNDINGS,
-            "salle" to Intent.DESCRIBE_SURROUNDINGS,
-            "dehors" to Intent.DESCRIBE_SURROUNDINGS,
-
-            // ── HEURE ──
-            "heure" to Intent.WHAT_TIME,
-            "heures" to Intent.WHAT_TIME,
-            "time" to Intent.WHAT_TIME,
-            "horloge" to Intent.WHAT_TIME,
-            "temps" to Intent.WHAT_TIME,
-            "moment" to Intent.WHAT_TIME,
-
-            // ── DATE ──
-            "date" to Intent.WHAT_DATE,
-            "jour" to Intent.WHAT_DATE,
-            "mois" to Intent.WHAT_DATE,
-            "année" to Intent.WHAT_DATE,
-            "annee" to Intent.WHAT_DATE,
-            "aujourd" to Intent.WHAT_DATE,
-            "today" to Intent.WHAT_DATE,
-            "calendar" to Intent.WHAT_DATE,
-            "calendrier" to Intent.WHAT_DATE,
-            "semaine" to Intent.WHAT_DATE,
-
-            // ── BATTERIE ──
-            "batterie" to Intent.BATTERY_STATUS,
-            "battery" to Intent.BATTERY_STATUS,
-            "charge" to Intent.BATTERY_STATUS,
-            "énergie" to Intent.BATTERY_STATUS,
-            "energie" to Intent.BATTERY_STATUS,
-            "pourcentage" to Intent.BATTERY_STATUS,
-            "power" to Intent.BATTERY_STATUS,
-            "pile" to Intent.BATTERY_STATUS,
-            "niveau" to Intent.BATTERY_STATUS,
-
-            // ── VOLUME ──
-            "volume" to Intent.VOLUME_UP,
-            "fort" to Intent.VOLUME_UP,
-            "plus" to Intent.VOLUME_UP,
-            "up" to Intent.VOLUME_UP,
-            "augmente" to Intent.VOLUME_UP,
-            "augmenter" to Intent.VOLUME_UP,
-            "monte" to Intent.VOLUME_UP,
-            "monter" to Intent.VOLUME_UP,
-            "haut" to Intent.VOLUME_UP,
-            "son" to Intent.VOLUME_UP,
-            "down" to Intent.VOLUME_DOWN,
-            "moins" to Intent.VOLUME_DOWN,
-            "bas" to Intent.VOLUME_DOWN,
-            "baisse" to Intent.VOLUME_DOWN,
-            "baisser" to Intent.VOLUME_DOWN,
-            "descends" to Intent.VOLUME_DOWN,
-            "descendre" to Intent.VOLUME_DOWN,
-            "silence" to Intent.VOLUME_DOWN,
-            "doucement" to Intent.VOLUME_DOWN,
-
-            // ── SALUTATION ──
-            "bonjour" to Intent.GREETING,
-            "salut" to Intent.GREETING,
-            "hello" to Intent.GREETING,
-            "hey" to Intent.GREETING,
-            "bonsoir" to Intent.GREETING,
-            "bon matin" to Intent.GREETING,
-            "coucou" to Intent.GREETING,
-            "hi" to Intent.GREETING,
-            "salam" to Intent.GREETING,
-            "bonne" to Intent.GREETING,
-
-            // ── RÉPÉTER ──
-            "répète" to Intent.REPEAT,
-            "répéter" to Intent.REPEAT,
-            "repete" to Intent.REPEAT,
-            "repeter" to Intent.REPEAT,
-            "repeat" to Intent.REPEAT,
-            "encore" to Intent.REPEAT,
-            "redis" to Intent.REPEAT,
-            "redire" to Intent.REPEAT,
-            "autre" to Intent.REPEAT,
-            "ressayez" to Intent.REPEAT,
-
-            // ── STOP ──
-            "arrête" to Intent.STOP,
-            "arrêter" to Intent.STOP,
-            "arrete" to Intent.STOP,
-            "arreter" to Intent.STOP,
-            "stop" to Intent.STOP,
-            "tais" to Intent.STOP,
-            "taisez" to Intent.STOP,
-            "ferme" to Intent.STOP,
-            "fermer" to Intent.STOP,
-            "suffit" to Intent.STOP,
-            "calmez" to Intent.STOP,
-            "calme" to Intent.STOP,
-            "assez" to Intent.STOP,
-            "quitte" to Intent.STOP,
-
-            // ── AIDE ──
-            "aide" to Intent.HELP,
-            "aider" to Intent.HELP,
-            "help" to Intent.HELP,
-            "capable" to Intent.HELP,
-            "peux" to Intent.HELP,
-            "peut" to Intent.HELP,
-            "sais" to Intent.HELP,
-            "fonctions" to Intent.HELP,
-            "commandes" to Intent.HELP,
-            "possibilités" to Intent.HELP,
-
-            // ── MOTIVATION ──
-            "motivation" to Intent.TELL_MOTIVATIONAL,
-            "motiver" to Intent.TELL_MOTIVATIONAL,
-            "motivational" to Intent.TELL_MOTIVATIONAL,
-            "encourage" to Intent.TELL_MOTIVATIONAL,
-            "encourager" to Intent.TELL_MOTIVATIONAL,
-            "inspire" to Intent.TELL_MOTIVATIONAL,
-            "inspirer" to Intent.TELL_MOTIVATIONAL,
-            "force" to Intent.TELL_MOTIVATIONAL,
-            "courage" to Intent.TELL_MOTIVATIONAL,
-
-            // ── QUI ES-TU ──
-            "qui" to Intent.WHO_ARE_YOU,
-            "es" to Intent.WHO_ARE_YOU,
-            "you" to Intent.WHO_ARE_YOU,
-            "t'es" to Intent.WHO_ARE_YOU,
-            "nom" to Intent.WHO_ARE_YOU,
-            "appelle" to Intent.WHO_ARE_YOU,
-            "name" to Intent.WHO_ARE_YOU,
-            "are" to Intent.WHO_ARE_YOU,
-            "présente" to Intent.WHO_ARE_YOU,
-            "presente" to Intent.WHO_ARE_YOU,
-            "ta" to Intent.WHO_ARE_YOU
+        private val RULES = listOf(
+            rule(Intent.SCAN_PRODUCT, "scanne ce produit", "scan produit", "quel est ce produit", "scan this product", "what product is this", "code barre", "barcode"),
+            rule(Intent.TRANSLATE_TEXT, "traduis ce texte", "lis et traduis", "traduire le texte", "translate this text", "read and translate", "what does it say"),
+            rule(Intent.IDENTIFY_OBJECT, "identifie cet objet", "quel est cet objet", "qu est ce que je tiens", "que vois tu", "identify this object", "what is this", "what am i holding"),
+            rule(Intent.DESCRIBE_SURROUNDINGS, "decris autour de moi", "decris mon environnement", "decris la scene", "que vois tu autour", "describe my surroundings", "describe the scene", "what is around me"),
+            rule(Intent.READ_DOCUMENT, "lis ce document", "lis ce texte", "qu est ce qui est ecrit", "lecture document", "read this document", "read this text", "read aloud"),
+            rule(Intent.CALL_CONTACT, "appelle", "appel", "contacte", "telephone a", "call", "phone"),
+            rule(Intent.SWITCH_TO_ENGLISH, "parle anglais", "passe en anglais", "switch to english", "speak english"),
+            rule(Intent.SWITCH_TO_FRENCH, "parle francais", "passe en francais", "switch to french", "speak french"),
+            rule(Intent.SET_REMINDER, "rappelle moi", "cree un rappel", "mets un rappel", "remind me", "set reminder"),
+            rule(Intent.SET_ALARM, "mets une alarme", "regle une alarme", "reveille moi", "set alarm", "wake me"),
+            rule(Intent.TELL_STORY, "raconte une histoire", "histoire", "tell me a story", "story"),
+            rule(Intent.TELL_JOKE, "raconte une blague", "blague", "fais moi rire", "tell me a joke", "joke"),
+            rule(Intent.READ_NOTIFICATION, "lis mes notifications", "notifications", "read my notifications", "read notifications"),
+            rule(Intent.OPEN_APP, "ouvre", "lance", "demarre l application", "open", "launch"),
+            rule(Intent.CALCULATE, "calcule", "combien font", "combien fait", "calculate", "what is"),
+            rule(Intent.WHAT_TIME, "quelle heure", "donne moi l heure", "what time", "time is it"),
+            rule(Intent.WHAT_DATE, "quelle date", "quel jour", "date sommes nous", "what date", "what day"),
+            rule(Intent.BATTERY_STATUS, "niveau de batterie", "combien de batterie", "batterie", "battery level", "battery status"),
+            rule(Intent.VOLUME_UP, "augmente le volume", "monte le son", "plus fort", "volume up", "louder"),
+            rule(Intent.VOLUME_DOWN, "baisse le volume", "diminue le son", "moins fort", "volume down", "quieter"),
+            rule(Intent.GREETING, "bonjour", "bonsoir", "salut", "hello", "hey", "good morning", "good evening"),
+            rule(Intent.REPEAT, "repete", "dis le encore", "encore une fois", "repeat", "say it again"),
+            rule(Intent.STOP, "arrete voxia", "tais toi", "stop voxia", "stop listening", "arrete"),
+            rule(Intent.HELP, "aide", "que peux tu faire", "commandes disponibles", "help", "what can you do"),
+            rule(Intent.TELL_MOTIVATIONAL, "motive moi", "encourage moi", "motivation", "motivate me", "encourage me"),
+            rule(Intent.WHO_ARE_YOU, "qui es tu", "presente toi", "who are you", "what are you")
         )
 
-        private val EXTRACTION_PATTERNS = mapOf(
-            Intent.CALL_CONTACT to listOf(
-                Regex("(?:appelle|appel|call|phone|contact|téléphone|telephone|contacte|compose|joindre)\\s+(.+?)(?:\\.|$)", RegexOption.IGNORE_CASE),
-                Regex("(?:appelle|call)\\s+(?:moi|nous)\\s+(.+?)(?:\\.|$)", RegexOption.IGNORE_CASE),
-                Regex("(?:au|aux)\\s+(.+?)(?:\\.|$)", RegexOption.IGNORE_CASE)
+        private val KEYWORDS = mapOf(
+            Intent.IDENTIFY_OBJECT to setOf(
+                "objet", "tiens", "quoi", "vois", "voir", "identifier", "identifie", "identify",
+                "object", "holding", "main", "trouve", "trouver", "cherche", "chercher", "regarde",
+                "regarder", "reconnais", "reconnaitre", "reconnait", "montre", "montrer", "capture",
+                "analyse", "analyser", "scan", "scanne", "what"
             ),
-            Intent.OPEN_APP to listOf(
-                Regex("(?:ouvre|lance|open|démarre|demarre|lance|lance)\\s+(.+?)(?:\\.|$)", RegexOption.IGNORE_CASE)
+            Intent.SCAN_PRODUCT to setOf("produit", "barcode", "code barre", "prix", "emballage", "scan produit"),
+            Intent.TRANSLATE_TEXT to setOf("traduis", "traduire", "translate", "translation", "langue"),
+            Intent.READ_DOCUMENT to setOf(
+                "lis", "lire", "dit", "dis", "document", "texte", "text", "lettre", "courrier",
+                "page", "journal", "livre", "book", "read", "ecrit", "ecrire", "affiche",
+                "panneau", "enseigne", "menu", "menus", "etiquette"
             ),
-            Intent.CALCULATE to listOf(
-                Regex("(?:calcule|calculer|calculate|combien\\s+font|combiens?\\s+fait)\\s+(.+?)(?:\\.|$)", RegexOption.IGNORE_CASE)
-            )
+            Intent.CALL_CONTACT to setOf(
+                "appelle", "appel", "appeler", "appellez", "telephone", "tel", "call", "phone",
+                "contact", "contacte", "contacter", "joindre", "compose"
+            ),
+            Intent.SWITCH_TO_ENGLISH to setOf("anglais", "english", "switch", "anglaise", "anglois"),
+            Intent.SWITCH_TO_FRENCH to setOf("francais", "french", "francaise"),
+            Intent.SET_REMINDER to setOf("rappelle", "rappel", "remind", "reminder"),
+            Intent.SET_ALARM to setOf("alarme", "reveil", "reveille", "alarm"),
+            Intent.TELL_STORY to setOf("histoire", "raconte", "raconter", "story", "conte", "conter", "fable", "legende", "recit"),
+            Intent.TELL_JOKE to setOf("blague", "joke", "marrant", "comique", "fun", "funny", "humour", "rire", "ris"),
+            Intent.DESCRIBE_SURROUNDINGS to setOf(
+                "decris", "decrire", "describe", "surroundings", "environnement", "autour",
+                "alentours", "piece", "salle", "dehors", "scene"
+            ),
+            Intent.READ_NOTIFICATION to setOf("notification", "notifications", "message", "messages"),
+            Intent.OPEN_APP to setOf("ouvre", "lance", "open", "demarre", "application", "app"),
+            Intent.CALCULATE to setOf("calcule", "calculer", "calculate", "combien", "plus", "moins", "fois", "divise"),
+            Intent.WHAT_TIME to setOf("heure", "heures", "time", "horloge", "temps", "moment"),
+            Intent.WHAT_DATE to setOf("date", "jour", "mois", "annee", "aujourd", "today", "calendar", "calendrier", "semaine"),
+            Intent.BATTERY_STATUS to setOf("batterie", "battery", "charge", "energie", "pourcentage", "power", "pile", "niveau"),
+            Intent.VOLUME_UP to setOf("volume", "fort", "plus", "up", "augmente", "augmenter", "monte", "monter", "haut", "son"),
+            Intent.VOLUME_DOWN to setOf("down", "moins", "bas", "baisse", "baisser", "descends", "descendre", "silence", "doucement"),
+            Intent.GREETING to setOf("bonjour", "salut", "hello", "hey", "bonsoir", "coucou", "hi", "salam"),
+            Intent.REPEAT to setOf("repete", "repeter", "repeat", "encore", "redis", "redire", "autre", "ressayez"),
+            Intent.STOP to setOf("arrete", "arreter", "stop", "tais", "taisez", "ferme", "fermer", "suffit", "calme", "assez", "quitte"),
+            Intent.HELP to setOf("aide", "aider", "help", "capable", "peux", "peut", "sais", "fonctions", "commandes", "possibilites"),
+            Intent.TELL_MOTIVATIONAL to setOf("motivation", "motiver", "motivational", "encourage", "encourager", "inspire", "inspirer", "force", "courage"),
+            Intent.WHO_ARE_YOU to setOf("qui es tu", "who are you", "presente", "nom", "name")
         )
     }
 
     fun loadModel(): Boolean {
-        Log.d(TAG, "Classifieur par motifs chargé (${KEYWORD_MAP.size} entrées)")
+        PrivacyLog.d(TAG, "Classifieur rules baseline actif (${RULES.size} intentions, ${KEYWORDS.values.sumOf { it.size }} mots clés)")
         return true
     }
 
     fun classify(text: String, detectedLanguage: Language = Language.UNKNOWN): PredictionResult {
-        return classifyWithPatterns(text, detectedLanguage)
-    }
+        val normalized = TextNormalizer.normalize(text)
+        val language = detectedLanguage.takeUnless { it == Language.UNKNOWN } ?: LanguageDetector.detect(text)
+        if (normalized.isBlank()) return PredictionResult(Intent.FALLBACK, language, 0f)
 
-    private fun classifyWithPatterns(text: String, detectedLanguage: Language): PredictionResult {
-        val lower = text.lowercase().trim()
-        val words = lower.split("\\s+".toRegex())
-        val scores = mutableMapOf<Intent, Int>()
-
-        for (word in words) {
-            KEYWORD_MAP.forEach { (keyword, intent) ->
-                if (word == keyword || lower.contains(keyword)) {
-                    scores[intent] = (scores[intent] ?: 0) + 1
-                }
+        val scored = buildList {
+            RULES.forEach { rule ->
+                val best = rule.phrases.maxOfOrNull { phraseScore(normalized, it) } ?: 0
+                if (best > 0) add(rule.intent to best)
+            }
+            KEYWORDS.forEach { (intent, keywords) ->
+                val score = keywordScore(normalized, keywords)
+                if (score > 0) add(intent to score)
             }
         }
+            .groupBy({ it.first }, { it.second })
+            .map { (intent, scores) -> intent to scores.max() }
+            .sortedByDescending { it.second }
 
-        if (scores.isEmpty()) {
-            val lang = if (detectedLanguage != Language.UNKNOWN) detectedLanguage
-            else LanguageDetector.detect(text)
-            return PredictionResult(intent = Intent.FALLBACK, language = lang, confidence = 0.5f)
+        val best = scored.firstOrNull()
+            ?: return PredictionResult(Intent.FALLBACK, language, 0f)
+        val secondScore = scored.getOrNull(1)?.second ?: 0
+        val confidence = when {
+            best.second >= 100 -> 0.99f
+            best.second >= 20 && secondScore == 0 -> 0.92f
+            best.second >= 10 && secondScore == 0 -> 0.85f
+            secondScore == 0 -> 0.70f
+            else -> (best.second.toFloat() / (best.second + secondScore)).coerceIn(0.5f, 0.95f)
         }
-
-        val bestIntent = scores.maxByOrNull { it.value }?.key ?: Intent.FALLBACK
-        val maxScore = scores.values.max()
-        val totalScore = scores.values.sum()
-        val confidence = (maxScore.toFloat() / totalScore.coerceAtLeast(1)).coerceAtMost(1f)
-
-        val lang = if (detectedLanguage != Language.UNKNOWN) detectedLanguage
-        else LanguageDetector.detect(text)
-
-        val extracted = extractEntities(text, bestIntent)
+        val time = extractTime(normalized)
 
         return PredictionResult(
-            intent = bestIntent,
-            language = lang,
+            intent = best.first,
+            language = language,
             confidence = confidence,
-            extractedContact = extracted["contact"],
-            extractedAppName = extracted["app"],
-            extractedExpression = extracted["expression"]
+            extractedContact = if (best.first == Intent.CALL_CONTACT) {
+                extractAfterCommand(normalized, listOf("appelle", "appel", "contacte", "telephone a", "call", "phone"))
+            } else null,
+            extractedAppName = if (best.first == Intent.OPEN_APP) {
+                extractAfterCommand(normalized, listOf("ouvre", "lance", "demarre l application", "open", "launch"))
+            } else null,
+            extractedExpression = if (best.first == Intent.CALCULATE) {
+                extractAfterCommand(normalized, listOf("calcule", "combien font", "combien fait", "calculate", "what is"))
+            } else null,
+            extractedHour = time?.first,
+            extractedMinute = time?.second,
+            extractedDurationMinutes = extractDurationMinutes(normalized)
         )
     }
 
-    private fun extractEntities(text: String, intent: Intent): Map<String, String?> {
-        val patterns = EXTRACTION_PATTERNS[intent] ?: return emptyMap()
-        val result = mutableMapOf<String, String?>()
+    private fun phraseScore(text: String, rawPhrase: String): Int {
+        val phrase = TextNormalizer.normalize(rawPhrase)
+        if (text == phrase) return 100
+        val padded = " $text "
+        val candidate = " $phrase "
+        if (padded.contains(candidate)) return 20 + phrase.split(' ').size * 4
+        return 0
+    }
 
-        for (pattern in patterns) {
-            val match = pattern.find(text) ?: continue
-            val value = match.groupValues.getOrNull(1)?.trim()?.replace(Regex("(mon|ma|mes|le|la|les|à|a|de|du|des)$", RegexOption.IGNORE_CASE), "")?.trim()
-            if (!value.isNullOrBlank()) {
-                when (intent) {
-                    Intent.CALL_CONTACT -> result["contact"] = value
-                    Intent.OPEN_APP -> result["app"] = value
-                    Intent.CALCULATE -> result["expression"] = value.take(50)
-                    else -> {}
-                }
-                break
+    private fun keywordScore(text: String, keywords: Set<String>): Int {
+        val padded = " $text "
+        return keywords.sumOf { rawKeyword ->
+            val keyword = TextNormalizer.normalize(rawKeyword)
+            when {
+                keyword.contains(' ') && padded.contains(" $keyword ") -> 8 + keyword.split(' ').size
+                padded.contains(" $keyword ") -> 4
+                else -> 0
             }
         }
-        return result
     }
 
-    fun release() {
-        Log.d(TAG, "Classifieur libéré")
+    private fun extractAfterCommand(text: String, commands: List<String>): String? {
+        commands.sortedByDescending { it.length }.forEach { command ->
+            val marker = "$command "
+            val index = text.indexOf(marker)
+            if (index >= 0) {
+                return text.substring(index + marker.length)
+                    .trim()
+                    .removeSuffix(" s il te plait")
+                    .removeSuffix(" please")
+                    .takeIf { it.isNotBlank() }
+            }
+        }
+        return null
     }
+
+    private fun extractTime(text: String): Pair<Int, Int>? {
+        val match = Regex("(?:a |at )?(\\d{1,2})(?:\\s*(?:h|:|heures?|hours?)\\s*(\\d{1,2})?)").find(text)
+            ?: return null
+        val hour = match.groupValues[1].toIntOrNull() ?: return null
+        val minute = match.groupValues.getOrNull(2)?.toIntOrNull() ?: 0
+        return if (hour in 0..23 && minute in 0..59) hour to minute else null
+    }
+
+    private fun extractDurationMinutes(text: String): Int? {
+        val match = Regex("(\\d+)\\s*(minutes?|mins?|heures?|hours?)").find(text) ?: return null
+        val value = match.groupValues[1].toIntOrNull() ?: return null
+        return if (match.groupValues[2].startsWith("h")) value * 60 else value
+    }
+
+    fun release() = Unit
 }

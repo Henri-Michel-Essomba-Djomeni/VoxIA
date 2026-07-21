@@ -1,6 +1,6 @@
-package com.VoxIA.speech.tts
+package com.voxia.speech.tts
 
-import com.VoxIA.speech.stt.SpeechLanguage
+import com.voxia.speech.stt.SpeechLanguage
 
 /**
  * VoxIA — Réponses vocales complètes et robustes

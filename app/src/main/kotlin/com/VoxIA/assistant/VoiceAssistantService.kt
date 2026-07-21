@@ -3,58 +3,79 @@ package com.voxia.assistant
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.Service
 import android.content.ContentResolver
-import android.content.Intent as AndroidIntent
+import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.database.Cursor
 import android.media.AudioManager
 import android.net.Uri
-import android.os.Build
 import android.os.Binder
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
+import android.provider.AlarmClock
 import android.provider.ContactsContract
-import android.util.Log
+import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.VoxIA.speech.SpeechManager
-import com.VoxIA.speech.stt.STTResult
-import com.VoxIA.speech.stt.SpeechLanguage
-import com.voxia.brain.Intent
+import androidx.lifecycle.LifecycleService
 import com.voxia.brain.IntentClassifierEngine
 import com.voxia.brain.IntentMapper
 import com.voxia.brain.Language
-import com.voxia.brain.PredictionResult
 import com.voxia.brain.VoxiaContext
 import com.voxia.brain.VoxiaResponses
+import com.voxia.speech.SpeechManager
+import com.voxia.speech.stt.STTResult
+import com.voxia.speech.stt.SpeechLanguage
+import com.voxia.speech.tts.TTSOptions
+import com.voxia.utils.ArithmeticEvaluator
+import com.voxia.utils.ConfirmationParser
 import com.voxia.utils.MemoryManager
+import com.voxia.utils.PrivacyLog
 import com.voxia.vision.OCRModule
 import com.voxia.vision.OCRResult
+import com.voxia.vision.TextTranslatorModule
 import com.voxia.vision.VisionModule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-class VoiceAssistantService : Service(), VoxiaContext {
+class VoiceAssistantService : LifecycleService(), VoxiaContext {
 
     companion object {
         private const val TAG = "VoiceAssistantService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "voxia_voice_channel"
+        const val ACTION_EVENT = "com.voxia.assistant.EVENT"
+        const val EXTRA_STATE = "state"
+        const val EXTRA_TRANSCRIPT = "transcript"
+        const val EXTRA_RESPONSE = "response"
+        const val EXTRA_PERMISSION = "permission"
     }
+
+    inner class LocalBinder : Binder() {
+        fun getService(): VoiceAssistantService = this@VoiceAssistantService
+    }
+
+    private val binder = LocalBinder()
 
     private lateinit var speechManager: SpeechManager
     private lateinit var intentClassifier: IntentClassifierEngine
     private var visionModule: VisionModule? = null
     private var ocrModule: OCRModule? = null
+    private var translatorModule: TextTranslatorModule? = null
     private var lifecycleOwner: LifecycleOwner? = null
     private var previewView: androidx.camera.view.PreviewView? = null
 
     private var currentLanguage = Language.FRENCH
     private var lastResponse: Pair<String, String> = Pair("", "")
     private var lastTranscript: String = ""
+    private var pendingPermissionAction: (() -> Unit)? = null
+    private var awaitingContactName = false
+    private var activeActionToken = 0
+    private var pendingConfirmation: (() -> Unit)? = null
 
     private val currentSpeechLanguage: SpeechLanguage
         get() = when (currentLanguage) {
@@ -66,27 +87,56 @@ class VoiceAssistantService : Service(), VoxiaContext {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(NOTIFICATION_ID, NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("VOXIA")
-            .setContentText("À l'écoute...")
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setOngoing(true)
-            .build())
+        startForeground(
+            NOTIFICATION_ID,
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("VOXIA")
+                .setContentText("À l'écoute...")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setOngoing(true)
+                .build()
+        )
 
-        intentClassifier = IntentClassifierEngine(this)
+        intentClassifier = IntentClassifierEngine()
         intentClassifier.loadModel()
 
         speechManager = SpeechManager(this)
         speechManager.init(
-            onReady = { Log.d(TAG, "SpeechManager prêt") },
-            onStateChange = { state -> Log.d(TAG, "État vocal: $state") },
+            onReady = { PrivacyLog.d(TAG, "SpeechManager prêt") },
+            onStateChange = { state ->
+                PrivacyLog.d(TAG, "État vocal: $state")
+                publishEvent(state = state.name)
+            },
             onTranscript = { result -> handleTranscript(result) },
             onCommandDetected = { text, lang -> handleCommand(text, lang) }
         )
 
         MemoryManager.load("app")
         MemoryManager.load("tts")
+        MemoryManager.load("android_stt")
         MemoryManager.load("intent")
+    }
+
+    override fun onBind(intent: Intent): IBinder {
+        super.onBind(intent)
+        return binder
+    }
+
+    fun listenOnce() = speechManager.listenForCommand()
+
+    fun cancelCurrentAction() {
+        clearPendingInteraction()
+        invalidateActiveAction()
+        releaseActiveModules()
+        speechManager.cancelListening()
+        val message = if (currentLanguage == Language.FRENCH) "Action annulée." else "Action cancelled."
+        publishEvent(state = "IDLE", response = message)
+    }
+
+    fun retryPendingPermissionAction() {
+        val action = pendingPermissionAction
+        pendingPermissionAction = null
+        action?.invoke()
     }
 
     fun setLifecycleOwner(owner: LifecycleOwner) {
@@ -99,6 +149,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
 
     private fun handleTranscript(result: STTResult) {
         lastTranscript = result.text
+        publishEvent(transcript = result.text)
     }
 
     private fun handleCommand(text: String, language: SpeechLanguage) {
@@ -106,8 +157,37 @@ class VoiceAssistantService : Service(), VoxiaContext {
             SpeechLanguage.FR -> Language.FRENCH
             SpeechLanguage.EN -> Language.ENGLISH
         }
+
+        pendingConfirmation?.let { confirmedAction ->
+            when (ConfirmationParser.parse(text)) {
+                true -> {
+                    pendingConfirmation = null
+                    confirmedAction.invoke()
+                }
+                false -> {
+                    pendingConfirmation = null
+                    speak("D'accord, annulé.", "Okay, cancelled.")
+                }
+                null -> speak(
+                    "Dites oui pour confirmer ou non pour annuler.",
+                    "Say yes to confirm or no to cancel."
+                )
+            }
+            return
+        }
+
+        if (awaitingContactName) {
+            awaitingContactName = false
+            makeCall(text)
+            return
+        }
+
         val result = intentClassifier.classify(text, lang)
-        Log.d(TAG, "Commande: '$text' → ${result.intent} (${result.language}, conf=${result.confidence})")
+        PrivacyLog.d(
+            TAG,
+            "Commande classée: intent=${result.intent}, language=${result.language}, " +
+                "confidence=${result.confidence}, chars=${text.length}"
+        )
         IntentMapper.execute(result, this)
     }
 
@@ -118,7 +198,58 @@ class VoiceAssistantService : Service(), VoxiaContext {
             Language.ENGLISH -> en
             Language.UNKNOWN -> fr
         }
+        publishEvent(response = text)
         speechManager.speak(text)
+    }
+
+    private fun publishEvent(
+        state: String? = null,
+        transcript: String? = null,
+        response: String? = null,
+        permission: String? = null
+    ) {
+        sendBroadcast(Intent(ACTION_EVENT).setPackage(packageName).apply {
+            state?.let { putExtra(EXTRA_STATE, it) }
+            transcript?.let { putExtra(EXTRA_TRANSCRIPT, it) }
+            response?.let { putExtra(EXTRA_RESPONSE, it) }
+            permission?.let { putExtra(EXTRA_PERMISSION, it) }
+        })
+    }
+
+    private fun requestConfirmation(promptFr: String, promptEn: String, onConfirm: () -> Unit) {
+        pendingConfirmation = onConfirm
+        speak(promptFr, promptEn)
+    }
+
+    private fun beginActiveAction(): Int {
+        activeActionToken += 1
+        releaseActiveModules()
+        return activeActionToken
+    }
+
+    private fun invalidateActiveAction() {
+        activeActionToken += 1
+    }
+
+    private fun isActiveAction(token: Int): Boolean = token == activeActionToken
+
+    private fun clearPendingInteraction() {
+        pendingConfirmation = null
+        pendingPermissionAction = null
+        awaitingContactName = false
+    }
+
+    private fun ensurePermission(permission: String, action: () -> Unit): Boolean {
+        if (ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED) return true
+        pendingPermissionAction = action
+        publishEvent(permission = permission)
+        val label = when (permission) {
+            Manifest.permission.CAMERA -> "la caméra"
+            Manifest.permission.READ_CONTACTS -> "les contacts"
+            else -> "cette autorisation"
+        }
+        speak("J'ai besoin de l'autorisation pour $label.", "I need permission to use $label.")
+        return false
     }
 
     override fun repeatLastResponse() {
@@ -143,7 +274,7 @@ class VoiceAssistantService : Service(), VoxiaContext {
     }
 
     override fun speakBatteryLevel() {
-        val batteryIntent = registerReceiver(null, IntentFilter(AndroidIntent.ACTION_BATTERY_CHANGED))
+        val batteryIntent = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         val level = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
         val scale = batteryIntent?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
         val percent = if (level >= 0 && scale > 0) (level * 100 / scale) else -1
@@ -165,31 +296,31 @@ class VoiceAssistantService : Service(), VoxiaContext {
     }
 
     override fun loadVisionModule() {
-        val owner = lifecycleOwner ?: return
+        if (!ensurePermission(Manifest.permission.CAMERA) { loadVisionModule() }) return
         if (visionModule == null) {
-            if (!MemoryManager.canLoad("vision")) {
-                MemoryManager.unload("ocr")
-            }
+            MemoryManager.unload("ocr")
             MemoryManager.load("vision")
             visionModule = VisionModule(this)
-            visionModule?.initialize(owner, previewView)
-            visionModule?.loadModel()
         }
     }
 
     override fun captureAndIdentify() {
+        if (!ensurePermission(Manifest.permission.CAMERA) { captureAndIdentify() }) return
+        val token = beginActiveAction()
         loadVisionModule()
-        visionModule?.let { vision ->
-            vision.startDetection { results ->
-                vision.stopDetection()
-                val voice = vision.buildVoiceDescription(results, when (currentLanguage) {
-                    Language.FRENCH -> "fr"
-                    else -> "en"
-                })
-                speak(voice, voice)
-                vision.releaseModel()
-                visionModule = null
-                MemoryManager.unload("vision")
+        val vision = visionModule ?: return
+        vision.initialize(lifecycleOwner ?: this, previewView) { ready ->
+            if (!isActiveAction(token)) return@initialize
+            if (!ready) {
+                speak("Impossible d'ouvrir la caméra.", "Unable to open the camera.")
+                releaseVision(vision)
+            } else {
+                vision.captureAnalysis { result ->
+                    if (!isActiveAction(token)) return@captureAnalysis
+                    val voice = vision.buildVoiceDescription(result, if (currentLanguage == Language.FRENCH) "fr" else "en")
+                    speak(voice, voice)
+                    releaseVision(vision)
+                }
             }
         }
     }
@@ -198,62 +329,140 @@ class VoiceAssistantService : Service(), VoxiaContext {
         captureAndIdentify()
     }
 
-    override fun loadOcrModule() {
-        val owner = lifecycleOwner ?: return
-        if (ocrModule == null) {
-            if (!MemoryManager.canLoad("ocr")) {
-                MemoryManager.unload("vision")
+    override fun scanProduct() {
+        if (!ensurePermission(Manifest.permission.CAMERA) { scanProduct() }) return
+        val token = beginActiveAction()
+        loadVisionModule()
+        val vision = visionModule ?: return
+        vision.initialize(lifecycleOwner ?: this, previewView) { ready ->
+            if (!isActiveAction(token)) return@initialize
+            if (!ready) {
+                speak("Impossible d'ouvrir la caméra.", "Unable to open the camera.")
+                releaseVision(vision)
+            } else {
+                vision.captureAnalysis { result ->
+                    if (!isActiveAction(token)) return@captureAnalysis
+                    val voice = vision.buildVoiceDescription(result, if (currentLanguage == Language.FRENCH) "fr" else "en", productMode = true)
+                    speak(voice, voice)
+                    releaseVision(vision)
+                }
             }
+        }
+    }
+
+    private fun releaseVision(module: VisionModule) {
+        runCatching { module.release() }.onFailure {
+            PrivacyLog.e(TAG, "Libération vision impossible")
+        }
+        if (visionModule === module) visionModule = null
+        MemoryManager.unload("vision")
+    }
+
+    override fun loadOcrModule() {
+        if (!ensurePermission(Manifest.permission.CAMERA) { loadOcrModule() }) return
+        if (ocrModule == null) {
+            MemoryManager.unload("vision")
             MemoryManager.load("ocr")
             ocrModule = OCRModule(this)
-            ocrModule?.initialize(owner, previewView)
         }
     }
 
     override fun captureAndRead() {
+        if (!ensurePermission(Manifest.permission.CAMERA) { captureAndRead() }) return
+        val token = beginActiveAction()
         loadOcrModule()
-        ocrModule?.let { ocr ->
-            ocr.readDocument(when (currentLanguage) {
-                Language.FRENCH -> "fr"
-                else -> "en"
-            }) { result ->
-                when (result) {
-                    is OCRResult.Success -> speak(result.voiceText, result.voiceText)
-                    is OCRResult.NoText -> speak(result.message, result.message)
-                    is OCRResult.Error -> speak(
-                        "Erreur de lecture: ${result.message}",
-                        "Reading error: ${result.message}"
-                    )
+        val ocr = ocrModule ?: return
+        ocr.initialize(lifecycleOwner ?: this, previewView) { ready ->
+            if (!isActiveAction(token)) return@initialize
+            if (!ready) {
+                speak("Impossible d'ouvrir la caméra.", "Unable to open the camera.")
+                releaseOcr(ocr)
+            } else {
+                ocr.readDocument(if (currentLanguage == Language.FRENCH) "fr" else "en") { result ->
+                    if (!isActiveAction(token)) return@readDocument
+                    when (result) {
+                        is OCRResult.Success -> speak(result.voiceText, result.voiceText)
+                        is OCRResult.NoText -> speak(result.message, result.message)
+                        is OCRResult.PoorQuality -> speak(result.message, result.message)
+                        is OCRResult.Error -> speak(
+                            "Erreur de lecture: ${result.message}",
+                            "Reading error: ${result.message}"
+                        )
+                    }
+                    releaseOcr(ocr)
                 }
-                ocrModule = null
-                MemoryManager.unload("ocr")
             }
         }
     }
 
+    private fun releaseOcr(module: OCRModule) {
+        runCatching { module.release() }.onFailure {
+            PrivacyLog.e(TAG, "Libération OCR impossible")
+        }
+        if (ocrModule === module) ocrModule = null
+        MemoryManager.unload("ocr")
+    }
+
+    override fun translateVisibleText() {
+        if (!ensurePermission(Manifest.permission.CAMERA) { translateVisibleText() }) return
+        val token = beginActiveAction()
+        val translator = TextTranslatorModule(this)
+        translatorModule = translator
+        val target = if (currentLanguage == Language.FRENCH) "fr" else "en"
+        translator.initialize(lifecycleOwner ?: this, previewView, target) { ready ->
+            if (!isActiveAction(token)) return@initialize
+            if (!ready) {
+                speak("Impossible d'ouvrir la caméra.", "Unable to open the camera.")
+                releaseTranslator(translator)
+            } else {
+                translator.captureAndTranslate(target) { result ->
+                    if (!isActiveAction(token)) return@captureAndTranslate
+                    val voice = translator.buildVoiceMessage(result, target)
+                    speak(voice, voice)
+                    releaseTranslator(translator)
+                }
+            }
+        }
+    }
+
+    private fun releaseTranslator(module: TextTranslatorModule) {
+        runCatching { module.release() }.onFailure {
+            PrivacyLog.e(TAG, "Libération traduction impossible")
+        }
+        if (translatorModule === module) translatorModule = null
+    }
+
+    private fun releaseActiveModules() {
+        visionModule?.let { releaseVision(it) }
+        ocrModule?.let { releaseOcr(it) }
+        translatorModule?.let { releaseTranslator(it) }
+    }
+
     override fun makeCall(contactName: String?) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-            != PackageManager.PERMISSION_GRANTED) {
-            speak(
-                "Je n'ai pas la permission d'appeler. Veuillez l'autoriser dans les paramètres.",
-                "I don't have call permission. Please grant it in settings."
-            )
+        if (contactName.isNullOrBlank()) {
+            speak("Quel contact voulez-vous appeler ?", "Which contact would you like to call?")
+            awaitingContactName = true
             return
         }
 
-        if (contactName.isNullOrBlank()) {
-            speak("Quel contact voulez-vous appeler ?", "Which contact would you like to call?")
-            return
-        }
+        if (!ensurePermission(Manifest.permission.READ_CONTACTS) { makeCall(contactName) }) return
 
         val number = findContactNumber(contactName)
         if (number != null) {
-            speak("Appel de $contactName en cours.", "Calling $contactName.")
-            val intent = AndroidIntent(AndroidIntent.ACTION_CALL).apply {
-                data = Uri.parse("tel:$number")
-                flags = AndroidIntent.FLAG_ACTIVITY_NEW_TASK
+            requestConfirmation(
+                "Voulez-vous appeler $contactName ? Dites oui ou non.",
+                "Do you want to call $contactName? Say yes or no."
+            ) {
+                speak(
+                    "J'ouvre le composeur pour $contactName. Confirmez l'appel à l'écran.",
+                    "Opening the dialer for $contactName. Confirm the call on screen."
+                )
+                val intent = Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:$number")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                }
+                startActivity(intent)
             }
-            startActivity(intent)
         } else {
             speak(
                 "Je ne trouve pas $contactName dans vos contacts.",
@@ -277,31 +486,60 @@ class VoiceAssistantService : Service(), VoxiaContext {
             cursor = resolver.query(uri, projection, selection, selectionArgs, null)
             cursor?.use { c ->
                 if (c.moveToFirst()) {
-                    c.getString(c.getColumnIndexOrThrow(
-                        ContactsContract.CommonDataKinds.Phone.NUMBER
-                    ))
-                } else null
+                    c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER))
+                } else {
+                    null
+                }
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Erreur recherche contact: ${e.message}")
+            PrivacyLog.e(TAG, "Recherche contact impossible")
             null
         } finally {
             cursor?.close()
         }
     }
 
-    override fun setAlarm() {
-        speak(
-            "Désolé, la fonctionnalité d'alarme n'est pas encore implémentée.",
-            "Sorry, alarm functionality is not yet implemented."
-        )
+    override fun setAlarm(hour: Int?, minute: Int?) {
+        if (hour == null) {
+            speak("Indiquez l'heure, par exemple : mets une alarme à 7 heures 30.", "Please specify a time, for example: set an alarm at 7 30.")
+            return
+        }
+        requestConfirmation(
+            "Confirmez-vous une alarme à %02d:%02d ? Dites oui ou non.".format(hour, minute ?: 0),
+            "Set an alarm for %02d:%02d? Say yes or no.".format(hour, minute ?: 0)
+        ) {
+            launchExternal(
+                Intent(AlarmClock.ACTION_SET_ALARM).apply {
+                    putExtra(AlarmClock.EXTRA_HOUR, hour)
+                    putExtra(AlarmClock.EXTRA_MINUTES, minute ?: 0)
+                    putExtra(AlarmClock.EXTRA_MESSAGE, "VOXIA")
+                    putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                },
+                "Alarme préparée pour %02d:%02d.".format(hour, minute ?: 0),
+                "Alarm prepared for %02d:%02d.".format(hour, minute ?: 0)
+            )
+        }
     }
 
-    override fun setReminder() {
-        speak(
-            "Désolé, la fonctionnalité de rappel n'est pas encore implémentée.",
-            "Sorry, reminder functionality is not yet implemented."
-        )
+    override fun setReminder(hour: Int?, minute: Int?, durationMinutes: Int?) {
+        when {
+            durationMinutes != null -> requestConfirmation(
+                "Confirmez-vous un minuteur de $durationMinutes minutes ? Dites oui ou non.",
+                "Set a $durationMinutes minute timer? Say yes or no."
+            ) {
+                launchExternal(
+                    Intent(AlarmClock.ACTION_SET_TIMER).apply {
+                        putExtra(AlarmClock.EXTRA_LENGTH, durationMinutes * 60)
+                        putExtra(AlarmClock.EXTRA_MESSAGE, "Rappel VOXIA")
+                        putExtra(AlarmClock.EXTRA_SKIP_UI, false)
+                    },
+                    "Minuteur préparé pour $durationMinutes minutes.",
+                    "Timer prepared for $durationMinutes minutes."
+                )
+            }
+            hour != null -> setAlarm(hour, minute)
+            else -> speak("Indiquez une heure ou une durée pour le rappel.", "Please specify a time or duration for the reminder.")
+        }
     }
 
     override fun increaseVolume() {
@@ -322,17 +560,42 @@ class VoiceAssistantService : Service(), VoxiaContext {
     }
 
     override fun openApp(appName: String?) {
-        speak(
-            "Désolé, l'ouverture d'applications n'est pas encore implémentée.",
-            "Sorry, opening apps is not yet implemented."
-        )
+        if (appName.isNullOrBlank()) {
+            speak("Quelle application voulez-vous ouvrir ?", "Which app would you like to open?")
+            return
+        }
+        val launcherQuery = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        val match = packageManager.queryIntentActivities(launcherQuery, 0)
+            .map { it to it.loadLabel(packageManager).toString() }
+            .sortedBy { it.second.length }
+            .firstOrNull { (_, label) -> label.contains(appName, ignoreCase = true) }
+        val launchIntent = match?.first?.activityInfo?.packageName?.let(packageManager::getLaunchIntentForPackage)
+        if (launchIntent == null) {
+            speak("Je ne trouve pas l'application $appName.", "I cannot find the app $appName.")
+        } else {
+            requestConfirmation(
+                "Ouvrir ${match.second} ? Dites oui ou non.",
+                "Open ${match.second}? Say yes or no."
+            ) {
+                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(launchIntent)
+                speak("Ouverture de ${match.second}.", "Opening ${match.second}.")
+            }
+        }
     }
 
     override fun calculate(expression: String?) {
-        speak(
-            "Désolé, le calcul n'est pas encore implémenté.",
-            "Sorry, calculation is not yet implemented."
-        )
+        val result = ArithmeticEvaluator.evaluate(expression)
+        if (result == null) {
+            speak("Je n'ai pas reconnu une expression arithmétique valide.", "I did not recognize a valid arithmetic expression.")
+        } else {
+            val formatted = if (result % 1.0 == 0.0) {
+                result.toLong().toString()
+            } else {
+                "%.4f".format(Locale.US, result).trimEnd('0').trimEnd('.')
+            }
+            speak("Le résultat est $formatted.", "The result is $formatted.")
+        }
     }
 
     override fun tellStory(language: Language) {
@@ -351,50 +614,64 @@ class VoiceAssistantService : Service(), VoxiaContext {
     }
 
     override fun readNotifications() {
-        speak(
-            "Désolé, la lecture des notifications n'est pas encore implémentée.",
-            "Sorry, reading notifications is not yet implemented."
-        )
+        val enabled = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+            ?.contains(packageName) == true
+        if (!enabled) {
+            speak("Autorisez VOXIA dans l'accès aux notifications, puis réessayez.", "Enable notification access for VOXIA, then try again.")
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            return
+        }
+        val notifications = NotificationRepository.latest()
+        if (notifications.isEmpty()) {
+            speak("Aucune notification récente.", "No recent notifications.")
+        } else {
+            val fr = notifications.take(5).joinToString(". ") { "${it.app}: ${it.title}. ${it.text}" }
+            speak("Voici vos notifications. $fr", "Here are your notifications. $fr")
+        }
+    }
+
+    private fun launchExternal(intent: Intent, fr: String, en: String) {
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (intent.resolveActivity(packageManager) == null) {
+            speak("Aucune application compatible n'est installée.", "No compatible app is installed.")
+        } else {
+            startActivity(intent)
+            speak(fr, en)
+        }
     }
 
     override fun stopAll() {
-        speechManager.release()
-        visionModule?.release()
-        ocrModule?.release()
-        MemoryManager.unloadAll()
-        stopSelf()
+        clearPendingInteraction()
+        invalidateActiveAction()
+        releaseActiveModules()
+        speechManager.cancelListening()
+        val message = if (currentLanguage == Language.FRENCH) "D'accord, j'arrête." else "Okay, stopping."
+        publishEvent(response = message)
+        speechManager.speak(message, TTSOptions(onDone = {
+            Handler(Looper.getMainLooper()).post { stopSelf() }
+        }))
     }
 
     fun getCurrentLanguage(): Language = currentLanguage
 
     private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "VOXIA Voice Service",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
-                description = "Service vocal VOXIA en arrière-plan"
-                setSound(null, null)
-            }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "VOXIA Voice Service",
+            NotificationManager.IMPORTANCE_LOW
+        ).apply {
+            description = "Service vocal VOXIA en arrière-plan"
+            setSound(null, null)
         }
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
-
-    inner class LocalBinder : Binder() {
-        fun getService(): VoiceAssistantService = this@VoiceAssistantService
-    }
-
-    private val binder = LocalBinder()
-
-    override fun onBind(intent: AndroidIntent?): IBinder? = binder
 
     override fun onDestroy() {
+        clearPendingInteraction()
+        invalidateActiveAction()
+        releaseActiveModules()
         speechManager.release()
         intentClassifier.release()
-        visionModule?.release()
-        ocrModule?.release()
         MemoryManager.unloadAll()
         super.onDestroy()
     }

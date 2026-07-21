@@ -1,90 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
-    android:keepScreenOn="true">
-
-    <TextView
-        android:id="@+id/titleText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        android:textSize="32sp"
-        android:textStyle="bold"
-        android:textColor="@color/white"
-        android:layout_marginTop="48dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <TextView
-        android:id="@+id/stateText"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/state_idle"
-        android:textSize="18sp"
-        android:textColor="@color/white"
-        android:layout_marginTop="8dp"
-        app:layout_constraintTop_toBottomOf="@id/titleText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <TextView
-        android:id="@+id/transcriptText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/transcript_placeholder"
-        android:textSize="16sp"
-        android:textColor="@color/white"
-        android:gravity="center"
-        android:padding="16dp"
-        android:background="@color/transcript_bg"
-        android:layout_margin="24dp"
-        app:layout_constraintTop_toBottomOf="@id/stateText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/responseText"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/responseText"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/response_placeholder"
-        android:textSize="16sp"
-        android:textColor="@color/response_text"
-        android:gravity="center"
-        android:padding="16dp"
-        android:background="@color/response_bg"
-        android:layout_margin="24dp"
-        app:layout_constraintTop_toBottomOf="@id/transcriptText"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/languageBadge"
-        android:layout_marginBottom="8dp" />
-
-    <TextView
-        android:id="@+id/languageBadge"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="FR"
-        android:textSize="14sp"
-        android:textColor="@color/white"
-        android:paddingHorizontal="16dp"
-        android:paddingVertical="4dp"
-        android:background="@drawable/badge_language"
-        android:layout_marginBottom="24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <androidx.camera.view.PreviewView
-        android:id="@+id/previewView"
+    android:fillViewport="true"
+    tools:ignore="ButtonStyle">
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:visibility="invisible" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/app_name"
+            android:textColor="@color/white"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+        <TextView
+            android:id="@+id/stateText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:gravity="center"
+            android:text="@string/state_idle"
+            android:textColor="@color/white"
+            android:textSize="18sp" />
+        <androidx.camera.view.PreviewView
+            android:id="@+id/previewView"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="16dp"
+            android:contentDescription="@string/camera_preview"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/transcriptText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@color/transcript_bg"
+            android:minHeight="64dp"
+            android:padding="16dp"
+            android:text="@string/transcript_placeholder"
+            android:textColor="@color/white"
+            android:textIsSelectable="true"
+            android:textSize="17sp" />
+        <TextView
+            android:id="@+id/responseText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:accessibilityLiveRegion="polite"
+            android:background="@color/response_bg"
+            android:minHeight="72dp"
+            android:padding="16dp"
+            android:text="@string/response_placeholder"
+            android:textColor="@color/response_text"
+            android:textIsSelectable="true"
+            android:textSize="17sp" />
+        <Button
+            android:id="@+id/speakButton"
+            android:layout_width="match_parent"
+            android:layout_height="72dp"
+            android:layout_marginTop="20dp"
+            android:text="@string/action_speak"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal">
+            <Button android:id="@+id/identifyButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:text="@string/action_identify" />
+            <Button android:id="@+id/productButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_product" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+            <Button android:id="@+id/readButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_weight="1" android:text="@string/action_read" />
+            <Button android:id="@+id/translateButton" android:layout_width="0dp" android:layout_height="64dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_translate" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal">
+            <Button android:id="@+id/helpButton" android:layout_width="0dp" android:layout_height="56dp" android:layout_weight="1" android:text="@string/action_help" />
+            <Button android:id="@+id/cancelButton" android:layout_width="0dp" android:layout_height="56dp" android:layout_marginStart="8dp" android:layout_weight="1" android:text="@string/action_cancel" />
+        </LinearLayout>
+        <TextView
+            android:id="@+id/languageBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/badge_language"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="6dp"
+            android:text="@string/language_fr"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+</ScrollView>

@@ -1,5 +1,6 @@
 package com.voxia.brain
 
+@Suppress("UNUSED_PARAMETER")
 object VoxiaResponses {
 
     // Réponses de salutation
@@ -10,10 +11,10 @@ object VoxiaResponses {
 
     // Réponses d'aide
     fun help(language: Language): Pair<String, String> = Pair(
-        "Je peux identifier des objets, lire des documents, passer des appels, " +
-        "régler des alarmes, raconter des histoires et bien plus encore.",
-        "I can identify objects, read documents, make calls, " +
-        "set alarms, tell stories and much more."
+        "Je peux identifier une image, scanner un produit, lire ou traduire un document, " +
+        "ouvrir une application, préparer un appel, calculer, régler une alarme, lire vos notifications et vous assister.",
+        "I can identify an image, scan a product, read or translate a document, " +
+        "open an app, prepare a call, calculate, set an alarm, read notifications and assist you."
     )
 
     // Réponses fallback
@@ -41,10 +42,10 @@ object VoxiaResponses {
 
     // Présentation
     fun whoAreYou(language: Language): Pair<String, String> = Pair(
-        "Je suis VOXIA, votre assistant vocal intelligent. " +
-        "Je fonctionne entièrement sans internet.",
-        "I am VOXIA, your smart voice assistant. " +
-        "I work completely without internet."
+        "Je suis VOXIA, votre assistant vocal et visuel. Mes fonctions principales sont embarquées; " +
+        "la traduction et certains moteurs vocaux peuvent nécessiter une connexion lors de leur première utilisation.",
+        "I am VOXIA, your voice and visual assistant. My main features are bundled; " +
+        "translation and some speech engines may need a connection on first use."
     )
 
     // Blagues

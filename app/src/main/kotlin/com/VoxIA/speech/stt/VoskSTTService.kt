@@ -1,17 +1,19 @@
-package com.VoxIA.speech.stt
+package com.voxia.speech.stt
 
 import android.content.Context
-import android.util.Log
-import org.vosk.Model
-import org.vosk.Recognizer
-import org.vosk.android.RecognitionListener
-import org.vosk.android.SpeechService
-import org.json.JSONObject
+import android.content.Intent
+import android.os.Bundle
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import com.voxia.utils.PrivacyLog
+import java.util.Locale
 
-// Langue supportée
 enum class SpeechLanguage { FR, EN }
 
-// Résultat de transcription
 data class STTResult(
     val text: String,
     val language: SpeechLanguage,
@@ -19,187 +21,167 @@ data class STTResult(
     val confidence: Float = 0f
 )
 
-class VoskSTTService(private val context: Context) {
+class AndroidSpeechRecognizerSTTService(private val context: Context) {
 
     companion object {
-        private const val TAG = "VoxIA_STT"
-        // Chemins des modèles dans assets/
-        private const val MODEL_FR = "vosk-model-small-fr"
-        private const val MODEL_EN = "vosk-model-small-en"
+        private const val TAG = "AndroidSpeechRecognizerSTT"
     }
 
-    private var modelFR: Model? = null
-    private var modelEN: Model? = null
-    private var speechService: SpeechService? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private var recognizer: SpeechRecognizer? = null
     private var currentLanguage = SpeechLanguage.FR
     private var isListening = false
+    private var fallbackAttempted = false
 
-    // ─── CHARGER LES MODÈLES ──────────────────────────
-    suspend fun loadModels() {
-        Log.d(TAG, "Chargement modèle FR...")
-        modelFR = Model(getModelPath(MODEL_FR))
-        Log.d(TAG, "Modèle FR chargé ✓")
+    suspend fun loadModels(): Boolean = loadModel(currentLanguage)
 
-        Log.d(TAG, "Chargement modèle EN...")
-        modelEN = Model(getModelPath(MODEL_EN))
-        Log.d(TAG, "Modèle EN chargé ✓")
-    }
-
-    // ─── CHARGER UN SEUL MODÈLE (économie RAM) ────────
-    suspend fun loadModel(language: SpeechLanguage) {
-        when (language) {
-            SpeechLanguage.FR -> {
-                if (modelFR == null) {
-                    Log.d(TAG, "Chargement modèle FR...")
-                    modelFR = Model(getModelPath(MODEL_FR))
-                    Log.d(TAG, "Modèle FR chargé ✓")
-                }
-                // Libérer EN si chargé
-                modelEN?.close()
-                modelEN = null
-            }
-            SpeechLanguage.EN -> {
-                if (modelEN == null) {
-                    Log.d(TAG, "Chargement modèle EN...")
-                    modelEN = Model(getModelPath(MODEL_EN))
-                    Log.d(TAG, "Modèle EN chargé ✓")
-                }
-                // Libérer FR si chargé
-                modelFR?.close()
-                modelFR = null
+    suspend fun loadModel(language: SpeechLanguage): Boolean {
+        currentLanguage = language
+        return SpeechRecognizer.isRecognitionAvailable(context).also { available ->
+            if (!available) {
+                PrivacyLog.w(TAG, "SpeechRecognizer Android indisponible sur cet appareil")
             }
         }
-        currentLanguage = language
     }
 
-    // ─── DÉMARRER L'ÉCOUTE ────────────────────────────
     fun startListening(
         language: SpeechLanguage = currentLanguage,
         onResult: (STTResult) -> Unit,
         onError: (String) -> Unit
     ) {
         if (isListening) {
-            Log.w(TAG, "Déjà en écoute")
+            PrivacyLog.w(TAG, "Déjà en écoute")
             return
         }
 
-        val model = when (language) {
-            SpeechLanguage.FR -> modelFR
-            SpeechLanguage.EN -> modelEN
+        mainHandler.post {
+            if (!SpeechRecognizer.isRecognitionAvailable(context)) {
+                onError("Reconnaissance vocale Android indisponible")
+                return@post
+            }
+
+            currentLanguage = language
+            fallbackAttempted = false
+            launchRecognizer(
+                language = language,
+                useOnDevice = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                    SpeechRecognizer.isOnDeviceRecognitionAvailable(context),
+                preferOffline = true,
+                onResult = onResult,
+                onError = onError
+            )
         }
+    }
 
-        if (model == null) {
-            onError("Modèle $language non chargé")
-            return
+    private fun launchRecognizer(
+        language: SpeechLanguage,
+        useOnDevice: Boolean,
+        preferOffline: Boolean,
+        onResult: (STTResult) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        recognizer?.destroy()
+        recognizer = if (useOnDevice && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
+        } else {
+            SpeechRecognizer.createSpeechRecognizer(context)
         }
+        recognizer = recognizer?.apply {
+            setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: Bundle?) {
+                        isListening = true
+                    }
 
-        try {
-            val recognizer = Recognizer(model, 16000.0f)
+                    override fun onBeginningOfSpeech() = Unit
+                    override fun onRmsChanged(rmsdB: Float) = Unit
+                    override fun onBufferReceived(buffer: ByteArray?) = Unit
+                    override fun onEndOfSpeech() {
+                        isListening = false
+                    }
 
-            speechService = SpeechService(recognizer, 16000.0f)
-            speechService?.startListening(object : RecognitionListener {
+                    override fun onError(error: Int) {
+                        isListening = false
+                        // 12 = langue non prise en charge, 13 = pack de langue indisponible.
+                        // Certains appareils annoncent le moteur local avant que le pack FR soit installé.
+                        if ((error == 12 || error == 13) && !fallbackAttempted) {
+                            fallbackAttempted = true
+                            PrivacyLog.w(TAG, "Pack vocal local indisponible ($error), repli vers le moteur système")
+                            mainHandler.postDelayed({
+                                launchRecognizer(
+                                    language = language,
+                                    useOnDevice = false,
+                                    preferOffline = false,
+                                    onResult = onResult,
+                                    onError = onError
+                                )
+                            }, 200L)
+                            return
+                        }
+                        onError(humanReadableError(error))
+                    }
 
-                // Résultat partiel (streaming temps réel)
-                override fun onPartialResult(hypothesis: String?) {
-                    hypothesis?.let {
-                        val text = extractText(it, "partial")
-                        if (text.isNotEmpty()) {
-                            onResult(STTResult(
-                                text = text,
-                                language = language,
-                                isFinal = false
-                            ))
+                    override fun onResults(results: Bundle?) {
+                        isListening = false
+                        val matches = results
+                            ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            .orEmpty()
+                        val confidences = results
+                            ?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
+                        val text = matches.firstOrNull().orEmpty()
+                        if (text.isNotBlank()) {
+                            onResult(
+                                STTResult(
+                                    text = text,
+                                    language = language,
+                                    isFinal = true,
+                                    confidence = confidences?.firstOrNull() ?: 0f
+                                )
+                            )
                         }
                     }
-                }
 
-                // Résultat final
-                override fun onResult(hypothesis: String?) {
-                    hypothesis?.let {
-                        val text = extractText(it, "text")
-                        if (text.isNotEmpty()) {
-                            onResult(STTResult(
-                                text = text,
-                                language = language,
-                                isFinal = true
-                            ))
+                    override fun onPartialResults(partialResults: Bundle?) {
+                        val matches = partialResults
+                            ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            .orEmpty()
+                        val text = matches.firstOrNull().orEmpty()
+                        if (text.isNotBlank()) {
+                            onResult(STTResult(text, language, isFinal = false))
                         }
                     }
-                }
 
-                override fun onFinalResult(hypothesis: String?) {
-                    hypothesis?.let {
-                        val text = extractText(it, "text")
-                        if (text.isNotEmpty()) {
-                            onResult(STTResult(
-                                text = text,
-                                language = language,
-                                isFinal = true
-                            ))
-                        }
-                    }
-                    isListening = false
-                }
-
-                override fun onError(exception: Exception?) {
-                    Log.e(TAG, "Erreur STT: ${exception?.message}")
-                    onError(exception?.message ?: "Erreur inconnue")
-                    isListening = false
-                }
-
-                override fun onTimeout() {
-                    Log.w(TAG, "Timeout STT")
-                    isListening = false
-                }
+                    override fun onEvent(eventType: Int, params: Bundle?) = Unit
             })
+        }
 
-            isListening = true
-            Log.d(TAG, "Écoute démarrée en $language")
+        recognizer?.startListening(buildRecognizerIntent(language, preferOffline))
+        PrivacyLog.d(
+            TAG,
+            "Écoute SpeechRecognizer démarrée en $language " +
+                "(local=$useOnDevice, horsLigne=$preferOffline)"
+        )
+    }
 
-        } catch (e: Exception) {
-            Log.e(TAG, "Erreur démarrage: ${e.message}")
-            onError(e.message ?: "Erreur démarrage STT")
+    fun stopListening() {
+        mainHandler.post {
+            recognizer?.stopListening()
+            isListening = false
+            PrivacyLog.d(TAG, "Écoute arrêtée")
         }
     }
 
-    // ─── ARRÊTER L'ÉCOUTE ─────────────────────────────
-    fun stopListening() {
-        speechService?.stop()
-        isListening = false
-        Log.d(TAG, "Écoute arrêtée")
-    }
-
-    // ─── CHANGER DE LANGUE (< 2s) ─────────────────────
     suspend fun switchLanguage(language: SpeechLanguage) {
-        val wasListening = isListening
-        if (wasListening) stopListening()
-
-        loadModel(language)
+        if (isListening) stopListening()
         currentLanguage = language
-        Log.d(TAG, "Langue changée vers $language")
+        PrivacyLog.d(TAG, "Langue changée vers $language")
     }
 
-    // ─── LIBÉRER LA MÉMOIRE ───────────────────────────
     fun release() {
-        stopListening()
-        speechService?.shutdown()
-        modelFR?.close()
-        modelEN?.close()
-        modelFR = null
-        modelEN = null
-        Log.d(TAG, "Mémoire libérée")
-    }
-
-    // ─── UTILITAIRES ──────────────────────────────────
-    private fun getModelPath(modelName: String): String {
-        return "${context.filesDir.absolutePath}/$modelName"
-    }
-
-    private fun extractText(json: String, key: String): String {
-        return try {
-            JSONObject(json).optString(key, "").trim()
-        } catch (e: Exception) {
-            ""
+        mainHandler.post {
+            recognizer?.destroy()
+            recognizer = null
+            isListening = false
+            PrivacyLog.d(TAG, "STT libéré")
         }
     }
 
@@ -211,5 +193,43 @@ class VoskSTTService(private val context: Context) {
     }
 
     fun isCurrentlyListening() = isListening
+
     fun getCurrentLanguage() = currentLanguage
+
+    private fun buildRecognizerIntent(language: SpeechLanguage, preferOffline: Boolean): Intent {
+        val locale = when (language) {
+            SpeechLanguage.FR -> Locale.FRENCH
+            SpeechLanguage.EN -> Locale.ENGLISH
+        }
+        return Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
+            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, locale.toLanguageTag())
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, preferOffline)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 1200L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 700L)
+        }
+    }
+
+    private fun humanReadableError(error: Int): String = when (error) {
+        SpeechRecognizer.ERROR_AUDIO -> "Le microphone n'a pas pu être utilisé."
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "L'autorisation du microphone est requise."
+        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
+            "La reconnaissance vocale n'est pas disponible hors ligne et le réseau est inaccessible."
+        SpeechRecognizer.ERROR_NO_MATCH -> "Je n'ai pas compris. Réessayez en parlant distinctement."
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "La reconnaissance vocale est occupée. Réessayez."
+        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Je n'ai entendu aucune parole."
+        12, 13 -> "Le pack vocal français n'est pas installé sur ce téléphone."
+        else -> "La reconnaissance vocale a rencontré une erreur ($error)."
+    }
 }
+
+@Deprecated(
+    message = "Use AndroidSpeechRecognizerSTTService. This adapter wraps Android SpeechRecognizer, not Vosk.",
+    replaceWith = ReplaceWith("AndroidSpeechRecognizerSTTService")
+)
+typealias VoskSTTService = AndroidSpeechRecognizerSTTService

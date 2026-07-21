@@ -1,15 +1,22 @@
 package com.voxia.vision
 
 import android.content.Context
-import android.util.Log
-import androidx.camera.core.*
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetector
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import com.google.mlkit.vision.label.ImageLabeling
+import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import com.google.mlkit.vision.text.TextRecognition
+import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.voxia.utils.PrivacyLog
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -17,267 +24,183 @@ class VisionModule(private val context: Context) {
 
     companion object {
         private const val TAG = "VisionModule"
-
-        private val LABEL_FR = mapOf(
-            // Personnes & animaux
-            "person" to "personne", "man" to "homme", "woman" to "femme",
-            "child" to "enfant", "baby" to "bébé",
-            "bird" to "oiseau", "cat" to "chat", "dog" to "chien",
-            "horse" to "cheval", "sheep" to "mouton", "cow" to "vache",
-            "elephant" to "éléphant", "bear" to "ours",
-            "zebra" to "zèbre", "giraffe" to "girafe",
-            "butterfly" to "papillon", "insect" to "insecte",
-            "fish" to "poisson",
-
-            // Véhicules
-            "bicycle" to "vélo", "car" to "voiture", "motorcycle" to "moto",
-            "airplane" to "avion", "bus" to "bus", "train" to "train",
-            "truck" to "camion", "boat" to "bateau",
-            "bicycle" to "vélo", "scooter" to "scooter",
-            "helicopter" to "hélicoptère", "ambulance" to "ambulance",
-
-            // Signalisation
-            "traffic light" to "feu tricolore", "fire hydrant" to "bouche d'incendie",
-            "stop sign" to "panneau stop", "parking meter" to "parcmètre",
-            "bench" to "banc",
-
-            // Accessoires
-            "backpack" to "sac à dos", "umbrella" to "parapluie",
-            "handbag" to "sac à main", "tie" to "cravate",
-            "suitcase" to "valise", "hat" to "chapeau",
-            "glasses" to "lunettes", "sunglasses" to "lunettes de soleil",
-            "wallet" to "portefeuille", "watch" to "montre",
-            "belt" to "ceinture",
-
-            // Équipement sportif
-            "frisbee" to "frisbee", "skis" to "skis",
-            "snowboard" to "snowboard", "sports ball" to "ballon",
-            "kite" to "cerf-volant", "baseball bat" to "batte",
-            "baseball glove" to "gant", "skateboard" to "skateboard",
-            "surfboard" to "planche de surf", "tennis racket" to "raquette",
-            "ball" to "balle", "racket" to "raquette",
-
-            // Nourriture & boissons
-            "bottle" to "bouteille", "plate" to "assiette",
-            "wine glass" to "verre à vin", "cup" to "tasse",
-            "fork" to "fourchette", "knife" to "couteau",
-            "spoon" to "cuillère", "bowl" to "bol",
-            "banana" to "banane", "apple" to "pomme",
-            "sandwich" to "sandwich", "orange" to "orange",
-            "broccoli" to "brocoli", "carrot" to "carotte",
-            "hot dog" to "hot dog", "pizza" to "pizza",
-            "donut" to "donut", "cake" to "gâteau",
-            "cookie" to "biscuit", "bread" to "pain",
-            "cheese" to "fromage", "egg" to "œuf",
-            "rice" to "riz", "pasta" to "pâtes",
-            "soup" to "soupe", "salad" to "salade",
-            "water" to "eau", "juice" to "jus",
-            "milk" to "lait", "coffee" to "café",
-            "tea" to "thé", "beer" to "bière",
-
-            // Maison & meubles
-            "chair" to "chaise", "couch" to "canapé",
-            "potted plant" to "plante en pot", "bed" to "lit",
-            "dining table" to "table à manger", "toilet" to "toilette",
-            "table" to "table", "door" to "porte",
-            "window" to "fenêtre", "mirror" to "miroir",
-            "lamp" to "lampe", "pillow" to "oreiller",
-            "curtain" to "rideau", "rug" to "tapis",
-            "shelf" to "étagère", "drawer" to "tiroir",
-            "cabinet" to "armoire",
-
-            // Électronique
-            "tv" to "télévision", "laptop" to "ordinateur portable",
-            "mouse" to "souris", "remote" to "télécommande",
-            "keyboard" to "clavier", "cell phone" to "téléphone",
-            "phone" to "téléphone", "computer" to "ordinateur",
-            "tablet" to "tablette", "charger" to "chargeur",
-            "earphone" to "écouteurs", "headphone" to "casque",
-            "speaker" to "enceinte", "camera" to "appareil photo",
-            "printer" to "imprimante", "screen" to "écran",
-            "television" to "télévision", "monitor" to "moniteur",
-
-            // Objets divers
-            "book" to "livre", "clock" to "horloge",
-            "vase" to "vase", "scissors" to "ciseaux",
-            "teddy bear" to "ours en peluche",
-            "hair drier" to "sèche-cheveux",
-            "toothbrush" to "brosse à dents",
-            "key" to "clé", "keys" to "clés",
-            "pen" to "stylo", "pencil" to "crayon",
-            "paper" to "papier", "notebook" to "carnet",
-            "bag" to "sac", "box" to "boîte",
-            "basket" to "panier", "rope" to "corde",
-            "lighter" to "briquet", "candle" to "bougie",
-            "spoon" to "cuillère", "pot" to "marmite",
-            "pan" to "poêle", "bucket" to "seau",
-            "tool" to "outil", "hammer" to "marteau",
-            "screwdriver" to "tournevis", "knife" to "couteau",
-            "money" to "argent", "coin" to "pièce",
-            "card" to "carte", "ticket" to "billet",
-            "glove" to "gant", "mask" to "masque",
-            "shoe" to "chaussure", "clothing" to "vêtement",
-            "towel" to "serviette", "soap" to "savon"
-        )
+        private const val CONFIDENCE_THRESHOLD = 0.58f
     }
 
-    private var objectDetector: ObjectDetector? = null
-    private var isDetecting = false
-    private var cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
-    private var detectionCallback: ((List<DetectionResult>) -> Unit)? = null
     private var cameraProvider: ProcessCameraProvider? = null
+    private var imageCapture: ImageCapture? = null
+    private val cameraExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val labeler = ImageLabeling.getClient(
+        ImageLabelerOptions.Builder().setConfidenceThreshold(CONFIDENCE_THRESHOLD).build()
+    )
+    private val barcodeScanner = BarcodeScanning.getClient()
+    private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private var initialized = false
+    private var initializing = false
+    private val readyCallbacks = mutableListOf<(Boolean) -> Unit>()
 
     fun initialize(
         lifecycleOwner: LifecycleOwner,
-        previewView: androidx.camera.view.PreviewView? = null
+        previewView: androidx.camera.view.PreviewView? = null,
+        onReady: (Boolean) -> Unit = {}
     ) {
-        val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-        cameraProviderFuture.addListener({
-            cameraProvider = cameraProviderFuture.get()
-            bindCameraUseCases(lifecycleOwner, previewView)
-            Log.d(TAG, "CameraX initialisé")
+        if (initialized) {
+            onReady(true)
+            return
+        }
+        readyCallbacks += onReady
+        if (initializing) return
+        initializing = true
+        val future = ProcessCameraProvider.getInstance(context)
+        future.addListener({
+            runCatching {
+                cameraProvider = future.get()
+                bindCamera(lifecycleOwner, previewView)
+            }.onSuccess {
+                initialized = true
+                completeInitialization(true)
+            }.onFailure { error ->
+                PrivacyLog.e(TAG, "Initialisation CameraX impossible", error)
+                completeInitialization(false)
+            }
         }, ContextCompat.getMainExecutor(context))
     }
 
-    private fun bindCameraUseCases(
-        lifecycleOwner: LifecycleOwner,
-        previewView: androidx.camera.view.PreviewView?
-    ) {
-        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-
-        val preview = Preview.Builder()
-            .setTargetResolution(android.util.Size(640, 480))
-            .build()
-            .also { previewView?.let { pv -> it.setSurfaceProvider(pv.surfaceProvider) } }
-
-        val imageAnalyzer = ImageAnalysis.Builder()
-            .setTargetResolution(android.util.Size(640, 480))
-            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-            .build()
-            .also {
-                it.setAnalyzer(cameraExecutor) { imageProxy ->
-                    if (isDetecting) {
-                        processFrame(imageProxy)
-                    } else {
-                        imageProxy.close()
-                    }
-                }
-            }
-
-        try {
-            cameraProvider?.unbindAll()
-            cameraProvider?.bindToLifecycle(
-                lifecycleOwner, cameraSelector, preview, imageAnalyzer
-            )
-        } catch (e: Exception) {
-            Log.e(TAG, "Échec liaison CameraX: ${e.message}")
+    private fun bindCamera(owner: LifecycleOwner, previewView: androidx.camera.view.PreviewView?) {
+        val preview = Preview.Builder().build().also { useCase ->
+            previewView?.let { useCase.setSurfaceProvider(it.surfaceProvider) }
         }
+        imageCapture = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+        cameraProvider?.unbindAll()
+        cameraProvider?.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, preview, imageCapture)
     }
 
-    fun loadModel(): Boolean {
-        if (objectDetector != null) return true
-        return try {
-            val options = ObjectDetectorOptions.Builder()
-                .setDetectorMode(ObjectDetectorOptions.SINGLE_IMAGE_MODE)
-                .enableClassification()
-                .build()
-            objectDetector = ObjectDetection.getClient(options)
-            Log.d(TAG, "ML Kit Object Detection prêt (~10 Mo, 400+ classes)")
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Échec chargement ML Kit: ${e.message}")
-            false
-        }
+    private fun completeInitialization(success: Boolean) {
+        initializing = false
+        val callbacks = readyCallbacks.toList()
+        readyCallbacks.clear()
+        callbacks.forEach { it(success) }
     }
 
-    fun releaseModel() {
-        objectDetector?.close()
-        objectDetector = null
-        Log.d(TAG, "ML Kit libéré")
-    }
+    fun loadModel(): Boolean = true
+    fun releaseModel() = Unit
 
     fun startDetection(callback: (List<DetectionResult>) -> Unit) {
-        if (objectDetector == null && !loadModel()) {
-            callback(emptyList())
-            return
+        captureAnalysis { result ->
+            callback(result.labels.mapIndexed { index, label ->
+                DetectionResult(index, label.text, label.confidence, BoundingBox(0f, 0f, 1f, 1f))
+            })
         }
-        detectionCallback = callback
-        isDetecting = true
-        Log.d(TAG, "Détection démarrée")
     }
 
-    fun stopDetection() {
-        isDetecting = false
-        detectionCallback = null
-        Log.d(TAG, "Détection arrêtée")
-    }
+    fun stopDetection() = Unit
 
-    private fun processFrame(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage == null) {
-            imageProxy.close()
+    fun captureAnalysis(callback: (VisionAnalysis) -> Unit) {
+        val capture = imageCapture
+        if (!initialized || capture == null) {
+            callback(VisionAnalysis(error = "Caméra non prête"))
             return
         }
-
-        val inputImage = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-        val detector = objectDetector ?: run { imageProxy.close(); return }
-
-        detector.process(inputImage)
-            .addOnSuccessListener { objects ->
-                val results = objects.mapNotNull { obj ->
-                    val label = obj.labels.firstOrNull() ?: return@mapNotNull null
-                    DetectionResult(
-                        classId = 0,
-                        label = label.text,
-                        confidence = label.confidence,
-                        boundingBox = BoundingBox(
-                            x1 = obj.boundingBox.left.toFloat() / imageProxy.width.coerceAtLeast(1),
-                            y1 = obj.boundingBox.top.toFloat() / imageProxy.height.coerceAtLeast(1),
-                            x2 = obj.boundingBox.right.toFloat() / imageProxy.width.coerceAtLeast(1),
-                            y2 = obj.boundingBox.bottom.toFloat() / imageProxy.height.coerceAtLeast(1)
-                        )
-                    )
-                }
-                if (results.isNotEmpty()) {
-                    detectionCallback?.invoke(results)
-                }
-                imageProxy.close()
+        capture.takePicture(cameraExecutor, object : ImageCapture.OnImageCapturedCallback() {
+            override fun onCaptureSuccess(imageProxy: ImageProxy) {
+                analyze(imageProxy, callback)
             }
-            .addOnFailureListener {
-                imageProxy.close()
+
+            override fun onError(exception: ImageCaptureException) {
+                PrivacyLog.e(TAG, "Capture impossible", exception)
+                callback(VisionAnalysis(error = exception.message ?: "Capture impossible"))
+            }
+        })
+    }
+
+    private fun analyze(imageProxy: ImageProxy, callback: (VisionAnalysis) -> Unit) {
+        val bitmap = runCatching { imageProxy.toBitmap() }.getOrNull()
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        imageProxy.close()
+        if (bitmap == null) {
+            callback(VisionAnalysis(error = "Conversion de l'image impossible"))
+            return
+        }
+
+        val image = InputImage.fromBitmap(bitmap, rotation)
+        val labelsTask = labeler.process(image)
+        val barcodeTask = barcodeScanner.process(image)
+        val textTask = textRecognizer.process(image)
+        Tasks.whenAllComplete(labelsTask, barcodeTask, textTask)
+            .addOnCompleteListener {
+                val labels = if (labelsTask.isSuccessful) {
+                    labelsTask.result
+                        .sortedByDescending { it.confidence }
+                        .take(8)
+                        .map { VisionLabel(it.text, it.confidence) }
+                } else {
+                    emptyList()
+                }
+                val codes = if (barcodeTask.isSuccessful) {
+                    barcodeTask.result.mapNotNull { it.displayValue ?: it.rawValue }.distinct()
+                } else {
+                    emptyList()
+                }
+                val text = if (textTask.isSuccessful) textTask.result.text.trim() else ""
+                callback(VisionAnalysis(labels, codes, text, null))
+                bitmap.recycle()
             }
     }
 
     fun buildVoiceDescription(results: List<DetectionResult>, language: String): String {
-        if (results.isEmpty()) {
-            return if (language == "fr") "Je ne détecte aucun objet clairement."
-            else "I cannot detect any object clearly."
+        val labels = results.map { VisionLabel(it.label, it.confidence) }
+        return buildVoiceDescription(VisionAnalysis(labels = labels), language)
+    }
+
+    fun buildVoiceDescription(result: VisionAnalysis, language: String, productMode: Boolean = false): String {
+        result.error?.let {
+            return if (language == "fr") "Je ne peux pas analyser l'image : $it."
+            else "I cannot analyze the image: $it."
         }
-        val top = results.take(5)
+        val localizedLabels = result.labels.take(5).map {
+            val name = if (language == "fr") VisionVocabulary.toFrench(it.text) else it.text
+            "$name, ${(it.confidence * 100).toInt()} pour cent"
+        }
+        val category = ProductKnowledgeBase.inferCategory(result)
         return if (language == "fr") {
-            val items = top.joinToString(", ") {
-                val label = LABEL_FR[it.label.lowercase()] ?: it.label
-                "$label (${(it.confidence * 100).toInt()}%)"
+            buildString {
+                if (localizedLabels.isNotEmpty()) append("Je reconnais : ${localizedLabels.joinToString(", ")}. ")
+                if (category != null) append("Catégorie probable : ${category.nameFr}. ")
+                if (result.barcodes.isNotEmpty()) append("Code détecté : ${result.barcodes.first()}. ")
+                if (productMode && result.text.isNotBlank()) append("Texte de l'étiquette : ${result.text.take(350)}.")
+                if (isBlank()) append("Je n'ai pas reconnu assez d'informations. Rapprochez la caméra et améliorez la lumière.")
             }
-            if (top.size == 1) "Je détecte : $items."
-            else "Je détecte ${top.size} objets : $items."
         } else {
-            val items = top.joinToString(", ") {
-                "${it.label} at ${(it.confidence * 100).toInt()}%"
+            buildString {
+                if (localizedLabels.isNotEmpty()) append("I recognize: ${localizedLabels.joinToString(", ")}. ")
+                if (category != null) append("Likely category: ${category.nameEn}. ")
+                if (result.barcodes.isNotEmpty()) append("Detected code: ${result.barcodes.first()}. ")
+                if (productMode && result.text.isNotBlank()) append("Label text: ${result.text.take(350)}.")
+                if (isBlank()) append("I could not recognize enough information. Move closer and improve the light.")
             }
-            if (top.size == 1) "I detect: $items."
-            else "I detect ${top.size} objects: $items."
         }
     }
 
     fun release() {
-        stopDetection()
-        releaseModel()
         cameraProvider?.unbindAll()
+        labeler.close()
+        barcodeScanner.close()
+        textRecognizer.close()
         cameraExecutor.shutdown()
-        Log.d(TAG, "VisionModule libéré")
+        PrivacyLog.d(TAG, "VisionModule libéré")
     }
 }
+
+data class VisionAnalysis(
+    val labels: List<VisionLabel> = emptyList(),
+    val barcodes: List<String> = emptyList(),
+    val text: String = "",
+    val error: String? = null
+)
+
+data class VisionLabel(val text: String, val confidence: Float)
 
 data class DetectionResult(
     val classId: Int,
@@ -286,9 +209,79 @@ data class DetectionResult(
     val boundingBox: BoundingBox
 )
 
-data class BoundingBox(
-    val x1: Float,
-    val y1: Float,
-    val x2: Float,
-    val y2: Float
-)
+data class BoundingBox(val x1: Float, val y1: Float, val x2: Float, val y2: Float)
+
+data class ProductCategory(val id: String, val nameFr: String, val nameEn: String, val keywords: Set<String>)
+
+object ProductKnowledgeBase {
+    private val categories = listOf(
+        ProductCategory("food", "alimentation", "food", setOf("food", "fruit", "vegetable", "bread", "meal", "snack", "banana", "apple", "rice", "cereal", "pizza", "cake", "sandwich")),
+        ProductCategory("drink", "boissons", "drinks", setOf("drink", "beverage", "bottle", "juice", "water", "coffee", "tea", "can", "cup", "milk")),
+        ProductCategory("health", "santé et médicaments", "health and medicine", setOf("medicine", "drug", "tablet", "pharmacy", "health", "medical")),
+        ProductCategory("hygiene", "hygiène et cosmétiques", "hygiene and cosmetics", setOf("cosmetics", "skin", "soap", "shampoo", "toothpaste", "beauty")),
+        ProductCategory("household", "maison et entretien", "household", setOf("furniture", "cleaning", "chair", "table", "kitchen", "home", "tool", "lamp", "bed", "couch")),
+        ProductCategory("electronics", "électronique", "electronics", setOf("electronics", "phone", "computer", "laptop", "screen", "device", "battery", "charger", "camera")),
+        ProductCategory("clothing", "vêtements et accessoires", "clothing and accessories", setOf("clothing", "fashion", "shoe", "bag", "hat", "glasses", "watch", "belt")),
+        ProductCategory("documents", "documents et paiement", "documents and payment", setOf("document", "money", "currency", "card", "book", "paper", "receipt", "ticket")),
+        ProductCategory("transport", "transport et signalisation", "transport and signs", setOf("vehicle", "car", "bus", "truck", "bicycle", "road", "traffic", "sign", "train")),
+        ProductCategory("agriculture", "agriculture et outils", "agriculture and tools", setOf("plant", "farm", "crop", "tool", "bucket", "container"))
+    )
+
+    fun inferCategory(result: VisionAnalysis): ProductCategory? {
+        val haystack = (result.labels.map { it.text } + result.text).joinToString(" ").lowercase()
+        return categories.map { category -> category to category.keywords.count { haystack.contains(it) } }
+            .filter { it.second > 0 }
+            .maxByOrNull { it.second }
+            ?.first
+    }
+}
+
+object VisionVocabulary {
+    private val fr = mapOf(
+        "person" to "personne", "man" to "homme", "woman" to "femme", "child" to "enfant",
+        "baby" to "bébé", "bird" to "oiseau", "cat" to "chat", "dog" to "chien",
+        "horse" to "cheval", "sheep" to "mouton", "cow" to "vache", "elephant" to "éléphant",
+        "bear" to "ours", "zebra" to "zèbre", "giraffe" to "girafe", "fish" to "poisson",
+        "bicycle" to "vélo", "car" to "voiture", "motorcycle" to "moto", "airplane" to "avion",
+        "bus" to "bus", "train" to "train", "truck" to "camion", "boat" to "bateau",
+        "vehicle" to "véhicule", "traffic light" to "feu tricolore", "stop sign" to "panneau stop",
+        "bench" to "banc", "backpack" to "sac à dos", "umbrella" to "parapluie",
+        "handbag" to "sac à main", "suitcase" to "valise", "hat" to "chapeau",
+        "glasses" to "lunettes", "sunglasses" to "lunettes de soleil", "wallet" to "portefeuille",
+        "watch" to "montre", "bottle" to "bouteille", "plate" to "assiette",
+        "wine glass" to "verre à vin", "cup" to "tasse", "fork" to "fourchette",
+        "knife" to "couteau", "spoon" to "cuillère", "bowl" to "bol", "banana" to "banane",
+        "apple" to "pomme", "sandwich" to "sandwich", "orange" to "orange",
+        "broccoli" to "brocoli", "carrot" to "carotte", "pizza" to "pizza", "donut" to "donut",
+        "cake" to "gâteau", "cookie" to "biscuit", "bread" to "pain", "cheese" to "fromage",
+        "egg" to "œuf", "rice" to "riz", "pasta" to "pâtes", "soup" to "soupe",
+        "salad" to "salade", "food" to "aliment", "drink" to "boisson",
+        "beverage" to "boisson", "water" to "eau", "juice" to "jus", "milk" to "lait",
+        "coffee" to "café", "tea" to "thé", "chair" to "chaise", "couch" to "canapé",
+        "potted plant" to "plante en pot", "plant" to "plante", "bed" to "lit",
+        "dining table" to "table à manger", "table" to "table", "door" to "porte",
+        "window" to "fenêtre", "lamp" to "lampe", "pillow" to "oreiller",
+        "shelf" to "étagère", "cabinet" to "armoire", "tv" to "télévision",
+        "television" to "télévision", "laptop" to "ordinateur portable", "computer" to "ordinateur",
+        "mouse" to "souris", "remote" to "télécommande", "keyboard" to "clavier",
+        "cell phone" to "téléphone", "mobile phone" to "téléphone portable",
+        "phone" to "téléphone", "tablet" to "tablette", "charger" to "chargeur",
+        "headphone" to "casque", "speaker" to "enceinte", "camera" to "appareil photo",
+        "printer" to "imprimante", "screen" to "écran", "monitor" to "moniteur",
+        "book" to "livre", "clock" to "horloge", "vase" to "vase", "scissors" to "ciseaux",
+        "teddy bear" to "ours en peluche", "toothbrush" to "brosse à dents",
+        "key" to "clé", "keys" to "clés", "pen" to "stylo", "pencil" to "crayon",
+        "paper" to "papier", "notebook" to "carnet", "bag" to "sac", "box" to "boîte",
+        "basket" to "panier", "rope" to "corde", "candle" to "bougie", "pot" to "marmite",
+        "pan" to "poêle", "bucket" to "seau", "tool" to "outil", "hammer" to "marteau",
+        "screwdriver" to "tournevis", "money" to "argent", "coin" to "pièce",
+        "card" to "carte", "ticket" to "billet", "glove" to "gant", "mask" to "masque",
+        "shoe" to "chaussure", "clothing" to "vêtement", "fashion" to "article de mode",
+        "towel" to "serviette", "soap" to "savon", "medicine" to "médicament",
+        "cosmetics" to "cosmétique", "electronics" to "appareil électronique",
+        "meal" to "repas", "dish" to "plat", "building" to "bâtiment",
+        "room" to "pièce", "road" to "route", "sky" to "ciel"
+    )
+
+    fun toFrench(label: String): String = fr[label.lowercase()] ?: label
+}

@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory
 import android.graphics.ImageFormat
 import android.graphics.Rect
 import android.graphics.YuvImage
-import android.util.Log
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
@@ -15,6 +14,7 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.Text
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import com.voxia.utils.PrivacyLog
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -27,11 +27,15 @@ import java.util.concurrent.Executors
  *   - TextTranslatorModule = lire + traduire (F2-TRANSLATE)
  *
  * Pipeline F2 :
- *   CAMÉRA → Stabilisation → ML Kit OCR → Structuration du texte → TTS
+ *   CAMÉRA → contrôle qualité (FrameQualityAnalyzer) → ML Kit OCR → Structuration du texte → TTS
+ *
+ * Le contrôle qualité est un premier incrément post-capture (voir FrameQualityAnalyzer),
+ * pas encore le guidage caméra temps réel visé par PLAN_ACTION_VOXIA.md §7.4/Phase 2.
  *
  * Optimisations :
+ *   - Rejet précoce des images trop sombres, trop claires ou floues (pas d'appel ML Kit inutile)
  *   - Détection automatique des blocs de texte (paragraphes, lignes)
- *   - Filtrage du texte fragmenté ou peu fiable (confiance < seuil)
+ *   - Filtrage des blocs trop courts pour être une lecture utile
  *   - Formatage intelligent pour une lecture fluide
  *   - Capture unique (pas de flux continu) pour économiser la RAM
  *
@@ -41,7 +45,6 @@ class OCRModule(private val context: Context) {
 
     companion object {
         private const val TAG = "OCRModule"
-        private const val MIN_CONFIDENCE = 0.7f    // seuil de confiance OCR
         private const val MIN_BLOCK_LENGTH = 3     // min chars par bloc pour être retenu
     }
 
@@ -56,20 +59,22 @@ class OCRModule(private val context: Context) {
 
     fun initialize(
         lifecycleOwner: LifecycleOwner,
-        previewView: androidx.camera.view.PreviewView? = null
+        previewView: androidx.camera.view.PreviewView? = null,
+        onReady: (Boolean) -> Unit = {}
     ) {
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
             cameraProvider = future.get()
-            bindCamera(lifecycleOwner, previewView)
-            Log.d(TAG, "OCRModule initialisé")
+            val ready = bindCamera(lifecycleOwner, previewView)
+            PrivacyLog.d(TAG, "OCRModule initialisé")
+            onReady(ready)
         }, ContextCompat.getMainExecutor(context))
     }
 
     private fun bindCamera(
         lifecycleOwner: LifecycleOwner,
         previewView: androidx.camera.view.PreviewView?
-    ) {
+    ): Boolean {
         val selector = CameraSelector.DEFAULT_BACK_CAMERA
         val preview = Preview.Builder().build()
             .also { previewView?.let { pv -> it.setSurfaceProvider(pv.surfaceProvider) } }
@@ -82,8 +87,10 @@ class OCRModule(private val context: Context) {
             cameraProvider?.unbindAll()
             cameraProvider?.bindToLifecycle(lifecycleOwner, selector, preview, capture)
             this.imageCaptureUseCase = capture
+            return true
         } catch (e: Exception) {
-            Log.e(TAG, "Erreur liaison caméra: ${e.message}")
+            PrivacyLog.e(TAG, "Erreur liaison caméra")
+            return false
         }
     }
 
@@ -119,7 +126,7 @@ class OCRModule(private val context: Context) {
                 }
 
                 override fun onError(exception: ImageCaptureException) {
-                    Log.e(TAG, "Erreur capture: ${exception.message}")
+                    PrivacyLog.e(TAG, "Erreur capture OCR")
                     callback(OCRResult.Error("Impossible de capturer l'image"))
                     isCapturing = false
                 }
@@ -135,6 +142,11 @@ class OCRModule(private val context: Context) {
         language: String = "fr",
         callback: (OCRResult) -> Unit
     ) {
+        val quality = FrameQualityAnalyzer.analyze(bitmap)
+        if (quality !is FrameQuality.Acceptable) {
+            callback(buildQualityGuidance(quality, language))
+            return
+        }
         val image = InputImage.fromBitmap(bitmap, 0)
         performOCR(image) { visionText ->
             val result = buildOCRResult(visionText, language)
@@ -149,18 +161,46 @@ class OCRModule(private val context: Context) {
         language: String,
         callback: (OCRResult) -> Unit
     ) {
-        val bitmap = imageProxy.toBitmapSafe() ?: run {
+        val rotation = imageProxy.imageInfo.rotationDegrees
+        val bitmap = runCatching { imageProxy.toBitmap() }.getOrNull() ?: run {
             imageProxy.close()
             callback(OCRResult.Error("Impossible de traiter l'image"))
             return
         }
         imageProxy.close()
 
-        val image = InputImage.fromBitmap(bitmap, 0)
+        val quality = FrameQualityAnalyzer.analyze(bitmap)
+        if (quality !is FrameQuality.Acceptable) {
+            PrivacyLog.d(TAG, "Capture rejetée avant OCR: qualite=${quality::class.simpleName}")
+            callback(buildQualityGuidance(quality, language))
+            bitmap.recycle()
+            return
+        }
+
+        val image = InputImage.fromBitmap(bitmap, rotation)
         performOCR(image) { visionText ->
             val result = buildOCRResult(visionText, language)
             callback(result)
+            bitmap.recycle()
         }
+    }
+
+    /** Traduit un [FrameQuality] défavorable en consigne vocale actionnable. */
+    private fun buildQualityGuidance(quality: FrameQuality, language: String): OCRResult.PoorQuality {
+        val message = when (quality) {
+            is FrameQuality.TooDark -> if (language == "fr")
+                "Image trop sombre. Rapprochez-vous d'une lumière et réessayez."
+            else "Image too dark. Move to better light and try again."
+            is FrameQuality.TooBright -> if (language == "fr")
+                "Image trop claire ou reflet détecté. Réduisez la lumière directe et réessayez."
+            else "Image too bright or glare detected. Reduce direct light and try again."
+            is FrameQuality.TooBlurry -> if (language == "fr")
+                "Image floue. Maintenez le téléphone stable et réessayez."
+            else "Image blurry. Hold the phone steady and try again."
+            is FrameQuality.Acceptable -> if (language == "fr")
+                "Image insuffisante pour la lecture." else "Image not suitable for reading."
+        }
+        return OCRResult.PoorQuality(quality::class.simpleName ?: "unknown", message)
     }
 
     private fun performOCR(
@@ -171,8 +211,8 @@ class OCRModule(private val context: Context) {
             .addOnSuccessListener { visionText ->
                 onResult(visionText)
             }
-            .addOnFailureListener { e ->
-                Log.e(TAG, "Échec OCR: ${e.message}")
+            .addOnFailureListener { _ ->
+                PrivacyLog.e(TAG, "Échec OCR")
                 onResult(null)
             }
     }
@@ -192,14 +232,11 @@ class OCRModule(private val context: Context) {
         }
 
         val rawText = visionText.text
-        Log.d(TAG, "Texte OCR brut: ${rawText.take(200)}")
+        PrivacyLog.d(TAG, "Texte OCR détecté: chars=${rawText.length}")
 
         // Filtrer et nettoyer les blocs
         val cleanedBlocks = visionText.textBlocks
-            .filter { block ->
-                block.text.length >= MIN_BLOCK_LENGTH &&
-                true // confidence retiré de ML Kit 16.0+
-            }
+            .filter { block -> block.text.length >= MIN_BLOCK_LENGTH }
             .sortedBy { it.boundingBox?.top ?: 0 } // Trier haut → bas
             .map { block ->
                 block.lines.joinToString(" ") { line ->
@@ -236,32 +273,11 @@ class OCRModule(private val context: Context) {
 
     // =========== UTILITAIRES ===========
 
-    private fun ImageProxy.toBitmapSafe(): Bitmap? {
-        return try {
-            val yBuffer = planes[0].buffer
-            val uBuffer = planes[1].buffer
-            val vBuffer = planes[2].buffer
-            val ySize = yBuffer.remaining()
-            val uSize = uBuffer.remaining()
-            val vSize = vBuffer.remaining()
-            val nv21 = ByteArray(ySize + uSize + vSize)
-            yBuffer.get(nv21, 0, ySize)
-            vBuffer.get(nv21, ySize, vSize)
-            uBuffer.get(nv21, ySize + vSize, uSize)
-            val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
-            val out = ByteArrayOutputStream()
-            yuvImage.compressToJpeg(Rect(0, 0, width, height), 90, out)
-            BitmapFactory.decodeByteArray(out.toByteArray(), 0, out.size())
-        } catch (e: Exception) {
-            null
-        }
-    }
-
     fun release() {
         ocrClient.close()
         cameraProvider?.unbindAll()
         cameraExecutor.shutdown()
-        Log.d(TAG, "OCRModule libéré")
+        PrivacyLog.d(TAG, "OCRModule libéré")
     }
 }
 
@@ -279,4 +295,7 @@ sealed class OCRResult {
 
     data class NoText(val message: String) : OCRResult()
     data class Error(val message: String) : OCRResult()
+
+    /** Capture rejetée avant OCR par [FrameQualityAnalyzer] : [reason] est le nom du [FrameQuality] défavorable. */
+    data class PoorQuality(val reason: String, val message: String) : OCRResult()
 }

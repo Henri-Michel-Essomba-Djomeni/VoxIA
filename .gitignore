@@ -27,12 +27,13 @@ __pycache__/
 
 # Android Studio
 .idea/
+.gradle/
 *.iml
 local.properties
 
 # Clés privées
 *.jks
-keystore.propertiesdata/vision/runs/
+keystore.properties
+data/vision/runs/
 data/vision/yolov8n.pt
 *.pt
-data/vision/runs/

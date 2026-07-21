@@ -1,10 +1,10 @@
-package com.VoxIA.speech.tts
+package com.voxia.speech.tts
 
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.util.Log
-import com.VoxIA.speech.stt.SpeechLanguage
+import com.voxia.speech.stt.SpeechLanguage
+import com.voxia.utils.PrivacyLog
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
@@ -15,6 +15,7 @@ data class TTSOptions(
     val onDone: (() -> Unit)? = null
 )
 
+@Suppress("OVERRIDE_DEPRECATION")
 class TTSService(private val context: Context) {
 
     companion object {
@@ -23,6 +24,7 @@ class TTSService(private val context: Context) {
 
     private var tts: TextToSpeech? = null
     private var isReady = false
+    private var initializationFailed = false
     private var currentLanguage = SpeechLanguage.FR
     private val queue = ArrayDeque<Pair<String, TTSOptions>>()
     private var isSpeaking = false
@@ -33,10 +35,13 @@ class TTSService(private val context: Context) {
             if (status == TextToSpeech.SUCCESS) {
                 setLanguage(SpeechLanguage.FR)
                 isReady = true
-                Log.d(TAG, "TTS initialisé ✓")
+                initializationFailed = false
+                PrivacyLog.d(TAG, "TTS initialisé")
                 onReady()
+                processQueue()
             } else {
-                Log.e(TAG, "Erreur initialisation TTS")
+                initializationFailed = true
+                PrivacyLog.e(TAG, "Erreur initialisation TTS")
                 onError()
             }
         }
@@ -52,8 +57,8 @@ class TTSService(private val context: Context) {
             }
 
             override fun onError(utteranceId: String?) {
-                Log.e(TAG, "Erreur TTS utterance: $utteranceId")
                 utteranceId?.let { callbacks.remove(it) }
+                PrivacyLog.e(TAG, "Erreur TTS utterance")
                 isSpeaking = false
                 processQueue()
             }
@@ -62,7 +67,12 @@ class TTSService(private val context: Context) {
 
     fun speak(text: String, options: TTSOptions = TTSOptions()) {
         if (!isReady) {
-            Log.w(TAG, "TTS pas encore prêt")
+            if (initializationFailed) {
+                options.onDone?.invoke()
+                return
+            }
+            queue.add(Pair(text, options))
+            PrivacyLog.d(TAG, "TTS pas encore prêt; message mis en attente")
             return
         }
 
@@ -92,7 +102,7 @@ class TTSService(private val context: Context) {
         }
 
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
-        Log.d(TAG, "TTS: \"$text\"")
+        PrivacyLog.d(TAG, "TTS parle: chars=${text.length}")
     }
 
     private fun processQueue() {
@@ -109,10 +119,10 @@ class TTSService(private val context: Context) {
         val result = tts?.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA ||
             result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(TAG, "Langue $language non supportée")
+            PrivacyLog.e(TAG, "Langue $language non supportée")
         } else {
             currentLanguage = language
-            Log.d(TAG, "Langue TTS → $language")
+            PrivacyLog.d(TAG, "Langue TTS -> $language")
         }
     }
 
@@ -130,7 +140,7 @@ class TTSService(private val context: Context) {
         isSpeaking = false
         queue.clear()
         callbacks.clear()
-        Log.d(TAG, "TTS stoppé")
+        PrivacyLog.d(TAG, "TTS stoppé")
     }
 
     fun release() {
@@ -138,9 +148,10 @@ class TTSService(private val context: Context) {
         tts?.shutdown()
         tts = null
         isReady = false
-        Log.d(TAG, "TTS libéré")
+        PrivacyLog.d(TAG, "TTS libéré")
     }
 
     fun isSpeaking() = isSpeaking
+    fun isAvailable() = isReady
     fun getCurrentLanguage() = currentLanguage
 }

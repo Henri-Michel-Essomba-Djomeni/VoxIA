@@ -2,7 +2,9 @@ package com.voxia.brain
 
 enum class Intent {
     IDENTIFY_OBJECT,
+    SCAN_PRODUCT,
     READ_DOCUMENT,
+    TRANSLATE_TEXT,
     CALL_CONTACT,
     SWITCH_TO_ENGLISH,
     SWITCH_TO_FRENCH,
@@ -40,5 +42,8 @@ data class PredictionResult(
     val confidence: Float,
     val extractedContact: String? = null,
     val extractedAppName: String? = null,
-    val extractedExpression: String? = null
+    val extractedExpression: String? = null,
+    val extractedHour: Int? = null,
+    val extractedMinute: Int? = null,
+    val extractedDurationMinutes: Int? = null
 )

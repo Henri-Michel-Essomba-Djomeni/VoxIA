@@ -1,113 +1,217 @@
 package com.voxia.ui
 
 import android.Manifest
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.os.IBinder
-import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import com.voxia.assistant.R
 import com.voxia.assistant.VoiceAssistantService
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var viewModel: MainViewModel
     private lateinit var previewView: PreviewView
-    private var voiceService: VoiceAssistantService? = null
-    private var isServiceBound = false
+    private lateinit var stateText: TextView
+    private lateinit var transcriptText: TextView
+    private lateinit var responseText: TextView
+    private var service: VoiceAssistantService? = null
+    private var bound = false
+    private var receiverRegistered = false
+    private var pendingCameraAction: (() -> Unit)? = null
 
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            val binder = service as VoiceAssistantService.LocalBinder
-            voiceService = binder.getService()
-            isServiceBound = true
-            voiceService?.setLifecycleOwner(this@MainActivity)
-            voiceService?.setPreviewView(previewView)
-            Log.d("MainActivity", "Service VOXIA connecté")
+    private val audioPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) startAndBindService()
+        else Toast.makeText(this, R.string.permission_audio_required, Toast.LENGTH_LONG).show()
+    }
+
+    private val cameraPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) {
+            previewView.visibility = View.VISIBLE
+            val hadServiceRequest = pendingCameraAction == null
+            service?.retryPendingPermissionAction()
+            if (!hadServiceRequest) pendingCameraAction?.invoke()
+        } else {
+            responseText.setText(R.string.permission_camera_denied)
+        }
+        pendingCameraAction = null
+    }
+
+    private val contactsPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) service?.retryPendingPermissionAction()
+        else responseText.setText(R.string.permission_contacts_denied)
+    }
+
+    private val notificationPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (!granted) responseText.setText(R.string.permission_notifications_denied)
+    }
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
+            service = (binder as? VoiceAssistantService.LocalBinder)?.getService()
+            service?.setLifecycleOwner(this@MainActivity)
+            service?.setPreviewView(previewView)
+            bound = service != null
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
-            voiceService = null
-            isServiceBound = false
+            bound = false
+            service = null
         }
     }
 
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val allGranted = permissions.values.all { it }
-        if (allGranted) {
-            startVoiceService()
-        } else {
-            Toast.makeText(this, "Permissions requises pour VOXIA", Toast.LENGTH_LONG).show()
+    private val eventReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            intent ?: return
+            intent.getStringExtra(VoiceAssistantService.EXTRA_STATE)?.let { stateText.text = localizedState(it) }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_TRANSCRIPT)?.let { transcriptText.text = it }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_RESPONSE)?.let { responseText.text = it }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_PERMISSION)?.let { permission ->
+                when (permission) {
+                    Manifest.permission.CAMERA -> showPermissionRationale(
+                        R.string.permission_rationale_camera_title,
+                        R.string.permission_rationale_camera_message
+                    ) { cameraPermission.launch(permission) }
+
+                    Manifest.permission.READ_CONTACTS -> showPermissionRationale(
+                        R.string.permission_rationale_contacts_title,
+                        R.string.permission_rationale_contacts_message
+                    ) { contactsPermission.launch(permission) }
+                }
+            }
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         previewView = findViewById(R.id.previewView)
-        viewModel = ViewModelProvider(this)[MainViewModel::class.java]
+        stateText = findViewById(R.id.stateText)
+        transcriptText = findViewById(R.id.transcriptText)
+        responseText = findViewById(R.id.responseText)
 
-        if (hasAllPermissions()) {
-            startVoiceService()
-        } else {
-            requestPermissions()
+        findViewById<Button>(R.id.speakButton).setOnClickListener { service?.listenOnce() ?: requestAudioAndStart() }
+        findViewById<Button>(R.id.identifyButton).setOnClickListener { withCamera { service?.captureAndIdentify() } }
+        findViewById<Button>(R.id.productButton).setOnClickListener { withCamera { service?.scanProduct() } }
+        findViewById<Button>(R.id.readButton).setOnClickListener { withCamera { service?.captureAndRead() } }
+        findViewById<Button>(R.id.translateButton).setOnClickListener { withCamera { service?.translateVisibleText() } }
+        findViewById<Button>(R.id.helpButton).setOnClickListener { service?.speakHelp() }
+        findViewById<Button>(R.id.cancelButton).setOnClickListener { service?.cancelCurrentAction() }
+
+        requestAudioAndStart()
+        requestNotificationPermissionIfNeeded()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (!receiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                eventReceiver,
+                IntentFilter(VoiceAssistantService.ACTION_EVENT),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            receiverRegistered = true
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startAndBindService()
         }
     }
 
-    private fun hasAllPermissions(): Boolean {
-        val permissions = getRequiredPermissions()
-        return permissions.all {
-            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+    override fun onStop() {
+        if (receiverRegistered) {
+            unregisterReceiver(eventReceiver)
+            receiverRegistered = false
         }
-    }
-
-    private fun getRequiredPermissions(): Array<String> {
-        val permissions = mutableListOf(
-            Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.CAMERA,
-            Manifest.permission.READ_CONTACTS,
-            Manifest.permission.CALL_PHONE
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions.add(Manifest.permission.POST_NOTIFICATIONS)
-        }
-        return permissions.toTypedArray()
-    }
-
-    private fun requestPermissions() {
-        requestPermissionLauncher.launch(getRequiredPermissions())
-    }
-
-    private fun startVoiceService() {
-        val intent = Intent(this, VoiceAssistantService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(intent)
-        } else {
-            startService(intent)
-        }
-        bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        super.onStop()
     }
 
     override fun onDestroy() {
-        if (isServiceBound) {
-            unbindService(serviceConnection)
-            isServiceBound = false
-        }
-        val intent = Intent(this, VoiceAssistantService::class.java)
-        stopService(intent)
+        if (bound) unbindService(connection)
+        bound = false
         super.onDestroy()
+    }
+
+    private fun requestAudioAndStart() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            startAndBindService()
+        } else {
+            showPermissionRationale(
+                R.string.permission_rationale_audio_title,
+                R.string.permission_rationale_audio_message
+            ) { audioPermission.launch(Manifest.permission.RECORD_AUDIO) }
+        }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) return
+
+        showPermissionRationale(
+            R.string.permission_rationale_notifications_title,
+            R.string.permission_rationale_notifications_message,
+            onDecline = { responseText.setText(R.string.permission_notifications_denied) }
+        ) { notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS) }
+    }
+
+    private fun showPermissionRationale(
+        titleRes: Int,
+        messageRes: Int,
+        onDecline: () -> Unit = {},
+        onProceed: () -> Unit
+    ) {
+        AlertDialog.Builder(this)
+            .setTitle(titleRes)
+            .setMessage(messageRes)
+            .setCancelable(false)
+            .setPositiveButton(R.string.permission_dialog_continue) { dialog, _ ->
+                dialog.dismiss()
+                onProceed()
+            }
+            .setNegativeButton(R.string.permission_dialog_not_now) { dialog, _ ->
+                dialog.dismiss()
+                onDecline()
+            }
+            .show()
+    }
+
+    private fun startAndBindService() {
+        val intent = Intent(this, VoiceAssistantService::class.java)
+        ContextCompat.startForegroundService(this, intent)
+        if (!bound) bindService(intent, connection, Context.BIND_AUTO_CREATE)
+    }
+
+    private fun withCamera(action: () -> Unit) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            previewView.visibility = View.VISIBLE
+            action()
+        } else {
+            pendingCameraAction = action
+            showPermissionRationale(
+                R.string.permission_rationale_camera_title,
+                R.string.permission_rationale_camera_message,
+                onDecline = { pendingCameraAction = null }
+            ) { cameraPermission.launch(Manifest.permission.CAMERA) }
+        }
+    }
+
+    private fun localizedState(state: String): String = when (state) {
+        "LISTENING" -> getString(R.string.state_listening)
+        "PROCESSING" -> getString(R.string.state_processing)
+        "SPEAKING" -> getString(R.string.state_speaking)
+        else -> getString(R.string.state_idle)
     }
 }

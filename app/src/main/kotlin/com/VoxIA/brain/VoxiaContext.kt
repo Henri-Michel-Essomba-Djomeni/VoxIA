@@ -19,17 +19,19 @@ interface VoxiaContext {
     fun loadVisionModule()
     fun captureAndIdentify()
     fun describeSurroundings()
+    fun scanProduct()
 
     // OCR (Dev3)
     fun loadOcrModule()
     fun captureAndRead()
+    fun translateVisibleText()
 
     // Appel (Dev4)
     fun makeCall(contactName: String?)
 
     // Alarme et rappel
-    fun setAlarm()
-    fun setReminder()
+    fun setAlarm(hour: Int?, minute: Int?)
+    fun setReminder(hour: Int?, minute: Int?, durationMinutes: Int?)
 
     // Volume
     fun increaseVolume()

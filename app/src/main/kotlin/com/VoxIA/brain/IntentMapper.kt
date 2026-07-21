@@ -18,10 +18,14 @@ object IntentMapper {
                 context.captureAndIdentify()
             }
 
+            Intent.SCAN_PRODUCT -> context.scanProduct()
+
             Intent.READ_DOCUMENT -> {
                 context.loadOcrModule()
                 context.captureAndRead()
             }
+
+            Intent.TRANSLATE_TEXT -> context.translateVisibleText()
 
             Intent.CALL_CONTACT -> {
                 context.makeCall(result.extractedContact)
@@ -40,11 +44,11 @@ object IntentMapper {
             }
 
             Intent.SET_ALARM -> {
-                context.setAlarm()
+                context.setAlarm(result.extractedHour, result.extractedMinute)
             }
 
             Intent.SET_REMINDER -> {
-                context.setReminder()
+                context.setReminder(result.extractedHour, result.extractedMinute, result.extractedDurationMinutes)
             }
 
             Intent.WHAT_TIME -> {
@@ -104,8 +108,6 @@ object IntentMapper {
             }
 
             Intent.STOP -> {
-                val response = VoxiaResponses.stop(result.language)
-                context.speak(fr = response.first, en = response.second)
                 context.stopAll()
             }
 
