@@ -528,3 +528,57 @@ Résultats :
 - Pas de test utilisateur cible ni dataset consenti : les mesures réelles Intent/STT/OCR restent impossibles localement.
 - Pas de vérification visuelle post-modification pour `POST_NOTIFICATIONS`, `READ_CONTACTS` et les chemins de refus permission.
 - Pas de test instrumenté Espresso/Robolectric : les permissions, confirmations vocales et annulations réelles restent validées par compilation/lint et par logique pure existante, pas par un scénario UI automatisé.
+
+---
+
+# CODEX — Reprise P1 ciblée, scan produit sourcé
+
+Date : 2026-07-21
+Agent : Codex
+Portée : incrément P1 strictement aligné sur `PLAN_ACTION_VOXIA.md` sans modifier ce plan directeur.
+
+## Objectif traité
+
+Améliorer `Scanner produit` sans introduire de promesse non prouvée : lorsqu'un code-barres est détecté, VOXIA interroge un catalogue local sourcé. Si aucune fiche n'existe, il annonce clairement que le produit est inconnu au lieu d'inférer marque, prix, composition ou allergènes.
+
+## Changements principaux
+
+- `app/src/main/kotlin/com/VoxIA/vision/ProductCatalog.kt` :
+  - nouveau `ProductCatalog` chargé depuis `assets/product_catalog.tsv` ;
+  - parsing TSV pur et testable ;
+  - une fiche sans `barcode`, `name_fr`, `source` ou `source_date` est ignorée ;
+  - `ProductVoiceFormatter` produit les messages connu/inconnu en FR/EN.
+- `app/src/main/assets/product_catalog.tsv` :
+  - fichier catalogue local versionné, volontairement vide hors en-tête ;
+  - commentaires rappelant qu'aucune fiche non sourcée ne doit être inventée.
+- `VisionModule.kt` :
+  - en `productMode`, le premier code-barres passe par `ProductVoiceFormatter` ;
+  - si le catalogue ne connaît pas le code, la réponse reste utile mais prudente : code détecté, produit inconnu, éventuelle catégorie probable, aucune donnée sensible inventée.
+- `app/src/test/kotlin/com/voxia/vision/ProductCatalogTest.kt` :
+  - tests sur chargement sourcé, rejet des fiches incomplètes, normalisation du code et messages produit connu/inconnu.
+- Documentation :
+  - ADR-0009 dans `docs/REGISTRE_DECISIONS.md` ;
+  - R-012 dans `docs/REGISTRE_RISQUES.md` ;
+  - inventaire réel et guide d'installation mis à jour.
+
+## Vérification
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+```
+
+Résultats :
+
+- `test` : succès ; 6 suites uniques, debug + release, 46 exécutions, 0 échec, 0 erreur, 0 ignoré.
+- `lintDebug` : succès.
+- `assembleDebug` : succès ; APK debug régénéré.
+- `ProductCatalogTest` ajoute 4 tests unitaires dédiés au scan produit sourcé.
+
+## Limites restantes
+
+- Le catalogue local ne contient pas encore de données terrain consenties/sourcées.
+- Pas de requête réseau ni cache Open Food Facts dans cet incrément.
+- Pas de validation caméra réelle sur un produit physique avec code-barres ; la vérification actuelle couvre la logique de catalogue et le build JVM.

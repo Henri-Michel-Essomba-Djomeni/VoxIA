@@ -35,6 +35,7 @@ class VisionModule(private val context: Context) {
     )
     private val barcodeScanner = BarcodeScanning.getClient()
     private val textRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+    private val productCatalog = ProductCatalog.load(context)
     private var initialized = false
     private var initializing = false
     private val readyCallbacks = mutableListOf<(Boolean) -> Unit>()
@@ -158,6 +159,9 @@ class VisionModule(private val context: Context) {
         result.error?.let {
             return if (language == "fr") "Je ne peux pas analyser l'image : $it."
             else "I cannot analyze the image: $it."
+        }
+        if (productMode) {
+            ProductVoiceFormatter.build(result, productCatalog, language)?.let { return it }
         }
         val localizedLabels = result.labels.take(5).map {
             val name = if (language == "fr") VisionVocabulary.toFrench(it.text) else it.text

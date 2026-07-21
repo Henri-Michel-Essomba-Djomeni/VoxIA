@@ -69,3 +69,12 @@
 - Motivation : l'implémentation précédente pouvait empiler deux dialogues au démarrage et, dans certains chemins, conserver une action vocale différée après refus de permission. Pour une application vocale accessible, l'ordre des demandes et l'absence d'action fantôme sont aussi importants que la permission elle-même.
 - Conséquence : les demandes de permissions restent explicites, mais elles sont plus prévisibles. Toute future permission déclenchée depuis le service doit prévoir à la fois un chemin `retryPendingPermissionAction()` et un chemin de purge en cas de refus.
 - Vérification : `gradlew test`, `gradlew lintDebug`, `gradlew assembleDebug` et les trois smoke tests `evaluation/` réussissent le 2026-07-21. Vérification visuelle appareil encore à refaire pour `POST_NOTIFICATIONS`, `READ_CONTACTS` et les refus système.
+
+## ADR-0009 — Scanner produit sans inventer les données catalogue
+
+- Date : 2026-07-21
+- Statut : accepté (incrément P1)
+- Décision : `scanProduct()` utilise désormais `ProductCatalog`, chargé depuis `app/src/main/assets/product_catalog.tsv`, lorsque ML Kit détecte un code-barres. Le fichier catalogue exige au minimum `barcode`, `name_fr`, `source` et `source_date` pour accepter une fiche. Si le code n'existe pas dans le catalogue local, VOXIA annonce explicitement que le produit est inconnu et peut seulement fournir une catégorie probable issue de l'image/OCR.
+- Motivation : le plan directeur demande une recherche produit par code-barres avec source et date, et interdit d'inventer prix, allergènes ou composition. L'ancien comportement répétait le code détecté sans distinguer produit connu et inconnu.
+- Conséquence : VOXIA peut être branché sur un catalogue local ou terrain plus tard sans changer le pipeline caméra. Tant qu'aucun catalogue validé n'est fourni, l'application reste honnête : elle reconnaît le code, mais ne prétend pas connaître le produit.
+- Vérification : `ProductCatalogTest` couvre le parsing TSV, le rejet des fiches sans source/date, la normalisation du code et les messages produit connu/inconnu.

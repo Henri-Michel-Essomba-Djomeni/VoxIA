@@ -1,0 +1,5 @@
+# Catalogue produit local VOXIA alpha interne.
+# Colonnes obligatoires pour publier une correspondance : barcode, name_fr, source, source_date.
+# Le fichier est volontairement vide hors en-tete : aucune marque, prix, composition ou allergene
+# ne doit etre invente sans source verifiee et datee.
+barcode	brand	name_fr	name_en	category_fr	category_en	source	source_date	warning_fr	warning_en
