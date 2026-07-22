@@ -1,0 +1,23 @@
+{
+  "created_at": "2026-07-22T10:48:03.169871+00:00",
+  "source_dataset": "google/fleurs fr_fr dev",
+  "source_license": "CC-BY-4.0",
+  "source_url": "https://huggingface.co/datasets/google/fleurs/resolve/main/data/fr_fr/dev.tsv",
+  "warning": "This is a source manifest, not a STT quality report. Do not publish WER until VOXIA hypotheses are collected on real audio.",
+  "all_rows": 289,
+  "selected_rows": 36,
+  "gender_distribution": {
+    "female": 15,
+    "male": 21
+  },
+  "length_bucket_distribution": {
+    "long": 14,
+    "medium": 14,
+    "short": 8
+  },
+  "word_count": {
+    "min": 9,
+    "max": 46,
+    "avg": 23.11
+  }
+}

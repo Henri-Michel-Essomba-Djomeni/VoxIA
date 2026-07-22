@@ -133,3 +133,12 @@
 - Motivation : le plan directeur interdit l'authentification de monnaie et exige abstention, seuil strict et absence de promesse financière sans protocole spécialisé.
 - Conséquence : une détection générique de type `money`, `banknote`, `bill` ou `coin` ne devient plus une réponse de reconnaissance financière. Le libellé `ticket` reste un ticket, pas un billet bancaire.
 - Limite assumée : ce n'est pas un classifieur de billets et cela ne remplace pas une future décision go/no-go sur un domaine spécialisé. La règle réduit le risque de mauvaise promesse, pas le risque de non-détection.
+
+## ADR-0016 — Distinguer source STT et mesure STT
+
+- Date : 2026-07-22
+- Statut : accepté (préparation données)
+- Décision : ajouter un import reproductible de manifeste source FLEURS `fr_fr` dans `evaluation/stt/source_manifests/`, avec licence, URL source, chemin audio officiel et `hypothesis_text` volontairement vide.
+- Motivation : R-006 demande une baseline STT, mais annoncer un WER sans hypothèses VOXIA serait trompeur. Il faut d'abord séparer proprement données sources, exécution du moteur et rapport de qualité.
+- Conséquence : `fleurs_fr_dev_sample.csv` peut servir de liste de travail contrôlée, mais tout rapport publiable doit être produit ensuite depuis `evaluation/stt/manifests/` après transcription réelle par VOXIA et avec moteur, appareil, bruit, accent et date renseignés.
+- Limite assumée : FLEURS ne remplace pas une collecte terrain consentie sur accents et bruits locaux ; Common Voice reste un candidat complémentaire analysé, non intégré à ce stade.

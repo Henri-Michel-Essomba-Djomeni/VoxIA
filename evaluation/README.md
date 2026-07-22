@@ -18,6 +18,7 @@ evaluation/
     manifests/
     evaluate.py
     reports/
+    source_manifests/
   ocr/
     manifests/
     evaluate.py
@@ -50,6 +51,8 @@ Métriques produites :
 ## STT
 
 Entrée minimale : `sample_id`, `reference_text`, `hypothesis_text`.
+
+Les fichiers dans `stt/source_manifests/` sont des sources de travail reproductibles. Ils ne doivent pas être confondus avec des manifestes d'évaluation tant que `hypothesis_text` n'a pas été produit par VOXIA sur les audios correspondants.
 
 Commande :
 

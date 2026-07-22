@@ -993,3 +993,65 @@ git diff -- PLAN_ACTION_VOXIA.md
 ```
 
 Le résultat attendu est un workspace propre et aucun diff sur `PLAN_ACTION_VOXIA.md`.
+
+---
+
+# CODEX — Sources web, données de travail et préparation STT
+
+Date : 2026-07-22
+Agent : Codex
+Portée : récupérer et analyser des sources web utiles au projet, produire des données de travail traçables, documenter les limites, sans modifier `PLAN_ACTION_VOXIA.md`.
+
+## Règle respectée
+
+`PLAN_ACTION_VOXIA.md` est resté intact. La stratégie cœur n'a pas été modifiée ; les actions ont été tracées ici et dans les fichiers MD opérationnels.
+
+## Sources analysées
+
+- Google FLEURS `fr_fr` : source retenue pour créer un manifeste STT français reproductible, licence CC-BY-4.0.
+- Mozilla Common Voice Français 26.0 : source analysée pour une future couverture accents/variantes, non téléchargée dans cette tranche.
+- Open Food Facts : source analysée pour un futur catalogue produit ; l'appel API public local a renvoyé une indisponibilité temporaire, donc aucun scrapping forcé n'a été fait.
+
+## Données produites
+
+- `evaluation/stt/source_manifests/fleurs_fr_dev_sample.csv`
+- `evaluation/stt/source_manifests/fleurs_fr_dev_sample.report.json`
+- `tools/data/import_fleurs_stt_sample.py`
+- `tools/data/test_import_fleurs_stt_sample.py`
+- `docs/DATA_SOURCES_WEB.md`
+- `evaluation/stt/source_manifests/README.md`
+
+Analyse du manifeste FLEURS :
+
+- 289 lignes sources lues ;
+- 36 échantillons sélectionnés ;
+- 15 sources `female`, 21 sources `male` ;
+- 8 références courtes, 14 moyennes, 14 longues ;
+- moyenne : 23,11 mots par référence.
+
+## Limites assumées
+
+Le fichier FLEURS créé est un manifeste source, pas une preuve de qualité STT. `hypothesis_text` reste vide tant que VOXIA n'a pas transcrit les audios. Aucun WER ne doit être publié depuis ce dossier seul.
+
+Open Food Facts n'a pas été forcé : l'API publique a répondu temporairement indisponible lors de l'essai local. La suite propre consiste à utiliser un export stable ou un accès API respecté, avec User-Agent, sources et dates.
+
+## Documents mis à jour
+
+- `docs/DATA_SOURCES_WEB.md` : sources, licences, état, limites et reproduction.
+- `evaluation/README.md` : séparation entre manifestes sources STT et manifestes d'évaluation.
+- `evaluation/stt/source_manifests/README.md` : procédure d'utilisation correcte.
+- `docs/REGISTRE_DECISIONS.md` : ADR-0016 sur la distinction source STT / mesure STT.
+- `docs/REGISTRE_RISQUES.md` : R-006 passe en réduction, avec collecte terrain toujours requise.
+
+## Vérifications réalisées
+
+```powershell
+$env:PYTHONDONTWRITEBYTECODE='1'
+& 'C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' -m unittest tools.data.test_import_fleurs_stt_sample
+git diff -- PLAN_ACTION_VOXIA.md
+git diff --check
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+```
+
+Résultat : test Python OK, aucun diff sur `PLAN_ACTION_VOXIA.md`, `git diff --check` OK hors avertissements CRLF Windows, test Gradle Android OK après relance hors sandbox pour accéder au SDK Android local.
