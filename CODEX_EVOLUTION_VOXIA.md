@@ -1055,3 +1055,42 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 ```
 
 Résultat : test Python OK, aucun diff sur `PLAN_ACTION_VOXIA.md`, `git diff --check` OK hors avertissements CRLF Windows, test Gradle Android OK après relance hors sandbox pour accéder au SDK Android local.
+
+---
+
+# CODEX — Préparation tests terrain téléphone réel
+
+Date : 2026-07-22
+Agent : Codex
+Portée : terminer la partie préparable localement pour les tests téléphone réel, expliquer la frontière émulateur/appareil physique, ajouter protocole, checklist et outillage sans modifier `PLAN_ACTION_VOXIA.md`.
+
+## Règle respectée
+
+`PLAN_ACTION_VOXIA.md` est resté intact. Les éléments de validation terrain sont documentés dans les dossiers opérationnels et dans le registre de décisions.
+
+## Travail réalisé
+
+- Ajout de `docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md` avec méthode, matrice minimale, critères de sortie et distinction téléphone réel / émulateur.
+- Ajout de `evaluation/field/checklists/phone_real_smoke.csv` avec 20 cas terrain prioritaires.
+- Ajout de `evaluation/field/README.md` et `evaluation/field/reports/.gitkeep`.
+- Ajout de `scripts/run_phone_smoke.ps1` pour détecter `adb`, lister un appareil, installer/lancer VOXIA et collecter contexte/logcat local.
+- Mise à jour de `.gitignore` pour empêcher le commit de rapports terrain locaux potentiellement sensibles.
+- Mise à jour de `README.md`, `GUIDE_INSTALLATION.md`, `evaluation/README.md`, `docs/PROTOCOLE_RECHERCHE_UTILISATEUR.md`, `docs/REGISTRE_DECISIONS.md` et `docs/REGISTRE_RISQUES.md`.
+
+## Vérifications réalisées
+
+```powershell
+git diff -- PLAN_ACTION_VOXIA.md
+git diff --check
+$env:PYTHONDONTWRITEBYTECODE='1'
+& 'C:\Users\HP\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' -m unittest tools.data.test_import_fleurs_stt_sample
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_phone_smoke.ps1 -ListOnly
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test assembleDebug
+```
+
+Résultat : aucun diff sur `PLAN_ACTION_VOXIA.md`, `git diff --check` OK hors avertissements CRLF Windows, test Python OK, script téléphone OK en mode liste, Gradle `test assembleDebug` OK. `adb` est trouvé dans `C:\Users\HP\AppData\Local\Android\Sdk\platform-tools\adb.exe`, mais aucun téléphone n'était connecté ou autorisé pendant cette session. APK debug reconstruit localement dans `app/build/outputs/apk/debug/app-debug.apk`, 118 443 615 octets.
+
+## Limite assumée
+
+La préparation est terminée côté dépôt, mais le test terrain lui-même exige un vrai téléphone Android branché et autorisé. Un émulateur peut préparer les parcours, mais ne valide pas microphone, caméra, TalkBack réel, permissions constructeur, batterie, chauffe, chooser Android, presse-papiers et robustesse terrain.

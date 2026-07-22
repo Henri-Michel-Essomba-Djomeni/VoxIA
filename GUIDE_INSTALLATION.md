@@ -64,6 +64,8 @@ Android peut afficher un avertissement Play Protect, car l'APK est distribué ho
 - Vérification qu'aucun contenu utilisateur n'apparaît dans les logs release.
 - Rapport de baseline dans `evaluation/`.
 
+Le protocole détaillé de téléphone réel est dans `docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md`. Le script `scripts/run_phone_smoke.ps1` aide à détecter `adb`, lister un appareil, installer l'APK debug, lancer VOXIA et stocker les preuves locales dans `evaluation/field/reports/`. Si PowerShell bloque le script, utiliser `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\run_phone_smoke.ps1 -ListOnly`.
+
 ## Règle de publication
 
 Cette baseline ne doit pas être appelée “version 1.0 prête”. Toute communication externe doit parler de prototype alpha interne tant que les critères du plan directeur ne sont pas franchis.

@@ -23,6 +23,9 @@ evaluation/
     manifests/
     evaluate.py
     reports/
+  field/
+    checklists/
+    reports/
   vision_specialized/
     manifests/
     reports/
@@ -102,3 +105,7 @@ Un rapport n'est publiable que s'il indique :
 - limites connues.
 
 Les scripts génèrent du JSON et du Markdown dans `reports/`. Les résultats issus des templates sont des tests de fumée, pas des preuves de qualité.
+
+## Terrain téléphone réel
+
+Les tests téléphone réel utilisent `evaluation/field/checklists/phone_real_smoke.csv` et le protocole `docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md`. Les preuves locales restent dans `evaluation/field/reports/` et ne sont pas versionnées sans anonymisation.

@@ -28,6 +28,7 @@ La version source courante est marquée `0.1.0-alpha-internal`.
 - Registre des décisions : [docs/REGISTRE_DECISIONS.md](docs/REGISTRE_DECISIONS.md)
 - Gouvernance des données : [docs/GOUVERNANCE_DONNEES.md](docs/GOUVERNANCE_DONNEES.md)
 - Évaluation reproductible : [evaluation/README.md](evaluation/README.md)
+- Protocole téléphone réel : [docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md](docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md)
 
 ## Règle de communication
 

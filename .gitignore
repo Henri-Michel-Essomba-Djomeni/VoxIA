@@ -37,3 +37,7 @@ keystore.properties
 data/vision/runs/
 data/vision/yolov8n.pt
 *.pt
+
+# Rapports terrain locaux, potentiellement sensibles
+evaluation/field/reports/*
+!evaluation/field/reports/.gitkeep

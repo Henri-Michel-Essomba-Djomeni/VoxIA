@@ -36,3 +36,7 @@ Comprendre si VOXIA répond à trois tâches prioritaires pour des personnes fra
 - Backlog trié par valeur et risque.
 - Dataset pilote prêt pour `evaluation/`.
 - Décision documentée sur le moteur STT à prototyper ensuite.
+
+## Complément technique
+
+La vérification appareil, permissions, TalkBack, OCR long, TTS, presse-papiers, partage et logs est détaillée dans `docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md`. Le protocole utilisateur observe les usages ; le protocole téléphone réel vérifie que la build se comporte correctement sur matériel Android.

@@ -142,3 +142,12 @@
 - Motivation : R-006 demande une baseline STT, mais annoncer un WER sans hypothèses VOXIA serait trompeur. Il faut d'abord séparer proprement données sources, exécution du moteur et rapport de qualité.
 - Conséquence : `fleurs_fr_dev_sample.csv` peut servir de liste de travail contrôlée, mais tout rapport publiable doit être produit ensuite depuis `evaluation/stt/manifests/` après transcription réelle par VOXIA et avec moteur, appareil, bruit, accent et date renseignés.
 - Limite assumée : FLEURS ne remplace pas une collecte terrain consentie sur accents et bruits locaux ; Common Voice reste un candidat complémentaire analysé, non intégré à ce stade.
+
+## ADR-0017 — Faire du téléphone réel un gate terrain non remplaçable par l'émulateur
+
+- Date : 2026-07-22
+- Statut : accepté (préparation validation)
+- Décision : créer un protocole téléphone réel, une checklist terrain et un script `adb` de smoke test, puis classer l'émulateur comme outil de préparation uniquement.
+- Motivation : les risques STT, caméra, TTS, TalkBack, permissions constructeur, batterie et intégrations Android ne peuvent pas être validés sérieusement sans matériel réel.
+- Conséquence : aucune décision pilote ne doit être prise uniquement sur émulateur. Une première passe peut démarrer avec un téléphone ARM64 Android 10+, puis s'élargir à plusieurs versions et surcouches Android.
+- Limite assumée : cette tranche prépare l'exécution et la collecte de preuves ; elle ne remplace pas une session réellement faite avec appareil branché et résultats renseignés.
