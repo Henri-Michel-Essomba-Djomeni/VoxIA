@@ -9,13 +9,13 @@ import android.content.ContentResolver
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.database.Cursor
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Binder
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.provider.AlarmClock
 import android.provider.ContactsContract
 import android.provider.Settings
@@ -33,7 +33,6 @@ import com.voxia.speech.stt.STTResult
 import com.voxia.speech.stt.SpeechLanguage
 import com.voxia.speech.tts.TTSOptions
 import com.voxia.utils.ArithmeticEvaluator
-import com.voxia.utils.ConfirmationParser
 import com.voxia.utils.MemoryManager
 import com.voxia.utils.PrivacyLog
 import com.voxia.vision.DocumentReadingSession
@@ -78,9 +77,17 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private var lastResponse: Pair<String, String> = Pair("", "")
     private var lastTranscript: String = ""
     private var pendingPermissionAction: (() -> Unit)? = null
-    private var awaitingContactName = false
     private var activeActionToken = 0
-    private var pendingConfirmation: (() -> Unit)? = null
+    private val interactionHandler = Handler(Looper.getMainLooper())
+    private val confirmationTransactions = ConfirmationTransactionStore(
+        nowMillis = SystemClock::elapsedRealtime
+    )
+    private val contactChoices = ContactChoiceStore(
+        nowMillis = SystemClock::elapsedRealtime
+    )
+    private val contactNameRequests = ContactNameRequestStore(
+        nowMillis = SystemClock::elapsedRealtime
+    )
     private var readingSession: DocumentReadingSession? = null
     private var lastReadingText: String = ""
 
@@ -182,29 +189,57 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
             SpeechLanguage.EN -> Language.ENGLISH
         }
 
-        pendingConfirmation?.let { confirmedAction ->
-            when (ConfirmationParser.parse(text)) {
-                true -> {
-                    pendingConfirmation = null
-                    confirmedAction.invoke()
-                }
-                false -> {
-                    pendingConfirmation = null
-                    speak("D'accord, annulé.", "Okay, cancelled.")
-                }
-                null -> speak(
-                    "Dites oui pour confirmer ou non pour annuler.",
-                    "Say yes to confirm or no to cancel."
-                )
-            }
-            return
+        val confirmationResolution = confirmationTransactions.resolve(text)
+        when (confirmationResolution) {
+            is ConfirmationResolution.Confirmed -> Unit
+            is ConfirmationResolution.Cancelled -> speak("D'accord, annulé.", "Okay, cancelled.")
+            is ConfirmationResolution.Expired -> speak(
+                "La confirmation a expiré. Veuillez recommencer la commande.",
+                "The confirmation expired. Please repeat the command."
+            )
+            is ConfirmationResolution.Ambiguous -> speak(
+                "Dites oui pour confirmer ou non pour annuler.",
+                "Say yes to confirm or no to cancel."
+            )
+            ConfirmationResolution.None -> Unit
         }
+        if (confirmationResolution !is ConfirmationResolution.None) return
 
-        if (awaitingContactName) {
-            awaitingContactName = false
-            makeCall(text)
-            return
+        val contactResolution = contactChoices.resolve(text)
+        when (val resolution = contactResolution) {
+            is ContactChoiceResolution.Selected -> requestCallConfirmation(resolution.candidate)
+            is ContactChoiceResolution.Cancelled -> speak("D'accord, appel annulé.", "Okay, call cancelled.")
+            is ContactChoiceResolution.Expired -> speak(
+                "Le choix du contact a expiré. Veuillez recommencer.",
+                "The contact choice expired. Please start again."
+            )
+            is ContactChoiceResolution.Ambiguous -> speak(
+                "Plusieurs numéros portent ce nom. Dites le numéro du choix.",
+                "Several numbers use that name. Say the choice number."
+            )
+            is ContactChoiceResolution.Invalid -> speak(
+                "Choix non reconnu. Dites un numéro de la liste ou annulez.",
+                "Choice not recognized. Say a number from the list or cancel."
+            )
+            ContactChoiceResolution.None -> Unit
         }
+        if (contactResolution !is ContactChoiceResolution.None) return
+
+        val contactNameResolution = contactNameRequests.resolve(text)
+        when (val resolution = contactNameResolution) {
+            is ContactNameResolution.Provided -> makeCall(resolution.name)
+            is ContactNameResolution.Cancelled -> speak("D'accord, appel annulé.", "Okay, call cancelled.")
+            is ContactNameResolution.Expired -> speak(
+                "La demande de contact a expiré. Veuillez recommencer.",
+                "The contact request expired. Please start again."
+            )
+            is ContactNameResolution.Invalid -> speak(
+                "Je n'ai pas compris le nom. Dites le nom du contact ou annulez.",
+                "I did not understand the name. Say the contact name or cancel."
+            )
+            ContactNameResolution.None -> Unit
+        }
+        if (contactNameResolution !is ContactNameResolution.None) return
 
         val result = intentClassifier.classify(text, lang)
         PrivacyLog.d(
@@ -241,7 +276,17 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     }
 
     private fun requestConfirmation(promptFr: String, promptEn: String, onConfirm: () -> Unit) {
-        pendingConfirmation = onConfirm
+        contactChoices.clear()
+        contactNameRequests.clear()
+        val token = confirmationTransactions.begin(onConfirm)
+        interactionHandler.postDelayed({
+            if (confirmationTransactions.expire(token)) {
+                speak(
+                    "La confirmation a expiré. Veuillez recommencer la commande.",
+                    "The confirmation expired. Please repeat the command."
+                )
+            }
+        }, SENSITIVE_ACTION_TIMEOUT_MS)
         speak(promptFr, promptEn)
     }
 
@@ -260,9 +305,11 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private fun isActiveAction(token: Int): Boolean = token == activeActionToken
 
     private fun clearPendingInteraction() {
-        pendingConfirmation = null
+        confirmationTransactions.clear()
+        contactChoices.clear()
+        contactNameRequests.clear()
+        interactionHandler.removeCallbacksAndMessages(null)
         pendingPermissionAction = null
-        awaitingContactName = false
     }
 
     private fun ensurePermission(permission: String, action: () -> Unit): Boolean {
@@ -618,62 +665,122 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
 
     override fun makeCall(contactName: String?) {
         if (contactName.isNullOrBlank()) {
-            speak("Quel contact voulez-vous appeler ?", "Which contact would you like to call?")
-            awaitingContactName = true
+            requestContactName(
+                "Quel contact voulez-vous appeler ?",
+                "Which contact would you like to call?"
+            )
             return
         }
 
         if (!ensurePermission(Manifest.permission.READ_CONTACTS) { makeCall(contactName) }) return
 
-        val number = findContactNumber(contactName)
-        if (number != null) {
-            requestConfirmation(
-                "Voulez-vous appeler $contactName ? Dites oui ou non.",
-                "Do you want to call $contactName? Say yes or no."
-            ) {
-                speak(
-                    "J'ouvre le composeur pour $contactName. Confirmez l'appel à l'écran.",
-                    "Opening the dialer for $contactName. Confirm the call on screen."
-                )
-                val intent = Intent(Intent.ACTION_DIAL).apply {
-                    data = Uri.parse("tel:$number")
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                }
-                startActivity(intent)
-            }
-        } else {
-            speak(
+        when (val match = selectContactMatch(contactName, findContactNumbers(contactName))) {
+            ContactMatch.NotFound -> speak(
                 "Je ne trouve pas $contactName dans vos contacts.",
                 "I cannot find $contactName in your contacts."
             )
+            is ContactMatch.Unique -> requestCallConfirmation(match.candidate)
+            is ContactMatch.RequiresChoice -> requestContactChoice(match.candidates)
+            is ContactMatch.TooMany -> {
+                requestContactName(
+                    "J'ai trouvé ${match.count} correspondances. Dites un nom plus précis.",
+                    "I found ${match.count} matches. Say a more precise name."
+                )
+            }
         }
     }
 
-    private fun findContactNumber(name: String): String? {
+    private fun requestContactName(promptFr: String, promptEn: String) {
+        confirmationTransactions.clear()
+        contactChoices.clear()
+        val token = contactNameRequests.begin()
+        speak(promptFr, promptEn)
+        interactionHandler.postDelayed({
+            if (contactNameRequests.expire(token)) {
+                speak(
+                    "La demande de contact a expiré. Veuillez recommencer.",
+                    "The contact request expired. Please start again."
+                )
+            }
+        }, CONTACT_NAME_TIMEOUT_MS)
+    }
+
+    private fun requestContactChoice(candidates: List<ContactCandidate>) {
+        confirmationTransactions.clear()
+        contactNameRequests.clear()
+        val token = contactChoices.begin(candidates)
+        val choicesFr = candidates.mapIndexed { index, candidate ->
+            "${index + 1}, ${candidate.spokenDescriptionFr()}"
+        }.joinToString(". ")
+        val choicesEn = candidates.mapIndexed { index, candidate ->
+            "${index + 1}, ${candidate.spokenDescriptionEn()}"
+        }.joinToString(". ")
+        speak(
+            "Plusieurs contacts correspondent. $choicesFr. Dites le numéro du choix ou annulez.",
+            "Several contacts match. $choicesEn. Say the choice number or cancel."
+        )
+        interactionHandler.postDelayed({
+            if (contactChoices.expire(token)) {
+                speak(
+                    "Le choix du contact a expiré. Veuillez recommencer.",
+                    "The contact choice expired. Please start again."
+                )
+            }
+        }, CONTACT_CHOICE_TIMEOUT_MS)
+    }
+
+    private fun requestCallConfirmation(candidate: ContactCandidate) {
+        requestConfirmation(
+            "Voulez-vous appeler ${candidate.spokenDescriptionFr()} ? Dites oui ou non.",
+            "Do you want to call ${candidate.spokenDescriptionEn()}? Say yes or no."
+        ) {
+            speak(
+                "J'ouvre le composeur pour ${candidate.displayName}. Confirmez l'appel à l'écran.",
+                "Opening the dialer for ${candidate.displayName}. Confirm the call on screen."
+            )
+            val intent = Intent(Intent.ACTION_DIAL).apply {
+                data = Uri.fromParts("tel", candidate.number, null)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            startActivity(intent)
+        }
+    }
+
+    private fun findContactNumbers(name: String): List<ContactCandidate> {
         val resolver: ContentResolver = contentResolver
         val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
         val projection = arrayOf(
             ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-            ContactsContract.CommonDataKinds.Phone.NUMBER
+            ContactsContract.CommonDataKinds.Phone.NUMBER,
+            ContactsContract.CommonDataKinds.Phone.TYPE,
+            ContactsContract.CommonDataKinds.Phone.LABEL
         )
         val selection = "${ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME} LIKE ?"
         val selectionArgs = arrayOf("%$name%")
 
-        var cursor: Cursor? = null
         return try {
-            cursor = resolver.query(uri, projection, selection, selectionArgs, null)
-            cursor?.use { c ->
-                if (c.moveToFirst()) {
-                    c.getString(c.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER))
-                } else {
-                    null
+            resolver.query(uri, projection, selection, selectionArgs, null)?.use { cursor ->
+                val displayNameIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME)
+                val numberIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.NUMBER)
+                val typeIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.TYPE)
+                val labelIndex = cursor.getColumnIndexOrThrow(ContactsContract.CommonDataKinds.Phone.LABEL)
+                buildList {
+                    while (cursor.moveToNext()) {
+                        val displayName = cursor.getString(displayNameIndex).orEmpty().trim()
+                        val number = cursor.getString(numberIndex).orEmpty().trim()
+                        if (displayName.isBlank() || number.isBlank()) continue
+                        val type = cursor.getInt(typeIndex)
+                        val customLabel = cursor.getString(labelIndex)
+                        val typeLabel = ContactsContract.CommonDataKinds.Phone
+                            .getTypeLabel(resources, type, customLabel)
+                            .toString()
+                        add(ContactCandidate(displayName, number, typeLabel))
+                    }
                 }
-            }
+            }.orEmpty()
         } catch (e: Exception) {
             PrivacyLog.e(TAG, "Recherche contact impossible")
-            null
-        } finally {
-            cursor?.close()
+            emptyList()
         }
     }
 
