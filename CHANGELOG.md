@@ -21,14 +21,15 @@ Format : Added, Changed, Fixed, Security, Verification et Known limitations.
 - Les exceptions d'initialisation CameraX/OCR sont converties en échec terminal contrôlé.
 - Les confirmations sensibles expirent après 20 secondes, sont liées à un jeton unique et ne peuvent plus être rejouées par une commande tardive.
 - Les demandes et choix de contact expirent ; un résultat ambigu impose un choix numéroté puis une confirmation liée au numéro exact avant `ACTION_DIAL`.
+- La V0 hors ligne utilise une politique FR-only centrale : UI, classification, STT et TTS restent en français ; une demande d'anglais explique la limite sans modifier un sous-système isolé.
 
 ### Verification
 
-- Baseline documentaire publiée sur `main` au commit `9ef1ac549099ef1a03f97d7606e3dc98531b52a2` ; lots techniques vérifiés aux commits `ff300c1bb1e324ac665af194032b3d93d7e2a4b9` et `6047ea1`.
-- 58 tests unitaires distincts réussis sur debug et release, soit 116 exécutions, sans échec ni test ignoré.
+- Baseline documentaire publiée sur `main` au commit `9ef1ac549099ef1a03f97d7606e3dc98531b52a2` ; lots techniques vérifiés aux commits `ff300c1`, `6047ea1` et `84d2389`.
+- 62 tests unitaires distincts réussis sur debug et release, soit 124 exécutions, sans échec ni test ignoré.
 - Android Lint : 0 erreur, 12 avertissements de versions.
 - APK debug et APK release minifiée construits localement ; signature release v2 vérifiée, un signataire RSA 4096.
-- APK release `0.1.1-alpha-internal` : 103 394 119 octets, SHA-256 `89EEDF2EA690806A2BD2C1964559831E30618829AA333FCE0BE3E0602B108445`.
+- APK release `0.1.1-alpha-internal` : 103 394 179 octets, SHA-256 `9CBF21956FA139132089347D172F501613BA0917CA6BA73E70A48FC12330F07B`.
 - Test Vision Python : 14 réussites, 10 tests ignorés et 1 échec faute de modèle YOLO.
 
 ### Known limitations

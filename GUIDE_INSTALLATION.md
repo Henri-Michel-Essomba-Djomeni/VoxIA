@@ -92,13 +92,13 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 
 L'APK debug généré se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. L'AAB release se trouve dans `app/build/outputs/bundle/release/app-release.aab` ; sa signature dépend de la présence d'un `keystore.properties` local. Ces artefacts servent au contrôle technique interne ; ils ne remplacent pas l'APK de baseline historique ni une release pilote signée.
 
-Dernière vérification locale au 20 août 2026, commit applicatif `6047ea1` :
+Dernière vérification locale au 20 août 2026, commit applicatif `84d2389` :
 
-- 58 tests distincts réussis sur debug et release, soit 116 exécutions sans échec ;
+- 62 tests distincts réussis sur debug et release, soit 124 exécutions sans échec ;
 - lint : 0 erreur, 12 avertissements de versions ;
-- APK debug : 118 511 139 octets ;
-- APK release minifié et signé v2 : 103 394 119 octets ;
-- SHA-256 APK release : `89EEDF2EA690806A2BD2C1964559831E30618829AA333FCE0BE3E0602B108445` ;
+- APK debug : 118 511 199 octets ;
+- APK release minifié et signé v2 : 103 394 179 octets ;
+- SHA-256 APK release : `9CBF21956FA139132089347D172F501613BA0917CA6BA73E70A48FC12330F07B` ;
 - version embarquée : `0.1.1-alpha-internal` (`versionCode 4`).
 
 Ces tailles ne sont pas des constantes. Le manifest d'une release doit toujours être généré depuis l'artefact exact.

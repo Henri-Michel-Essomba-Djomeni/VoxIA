@@ -2,7 +2,7 @@
 
 **Statut :** inventaire factuel autoritaire
 **Dernière vérification :** 20 août 2026
-**Commit applicatif de référence :** `6047ea1`
+**Commit applicatif de référence :** `84d2389`
 **Version source :** `0.1.1-alpha-internal`
 
 Statuts :
@@ -17,8 +17,9 @@ Statuts :
 
 | Domaine | Fonction | Statut | Offline | Preuve actuelle | Limite principale |
 |---|---|---|---|---|---|
-| Voix | Écoute ponctuelle | Partiel | Conditionnel | Android `SpeechRecognizer` + test résultat vide | fournisseur système possiblement réseau ; aucun test appareil |
-| Voix | Synthèse vocale | Partiel | Conditionnel | Android `TextToSpeech` + tests callback terminal | dépend du moteur/pack ; collision TalkBack non résolue |
+| Voix | Écoute ponctuelle FR | Partiel | Conditionnel | politique FR-only + Android `SpeechRecognizer` + tests | fournisseur système possiblement réseau ; aucun test appareil |
+| Voix | Synthèse vocale FR | Partiel | Conditionnel | politique FR-only + Android `TextToSpeech` + tests | dépend du moteur/pack ; collision TalkBack non résolue |
+| Voix | Anglais | Absent V0 | Non | demande explicitement refusée sans mutation | localisation complète reportée après V0 offline |
 | Voix | Wake word | Absent | Non | stub retournant toujours faux | aucun modèle livré |
 | Intentions | Classification locale | Partiel | Oui | règles Kotlin + tests unitaires | mots isolés trop permissifs ; harnais Python différent du moteur livré |
 | Intentions | Modèle TFLite | Absent | Non | aucun fichier livré | ne pas annoncer de modèle entraîné |
@@ -57,7 +58,7 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 1. Le découplage caméra/microphone et la file d'actions sont implémentés, mais restent à valider sur appareil, refus de permission et rotation.
 2. Les sorties terminales STT vide, TTS en erreur et OCR à l'initialisation sont corrigées en JVM ; les timeouts globaux restent incomplets.
-3. L'état de langue peut diverger entre service, STT, TTS et interface.
+3. La politique FR-only élimine la divergence connue, mais le comportement moteur doit encore être validé sur appareil.
 4. Confirmations et contacts disposent maintenant de jetons, délais et désambiguïsation, mais le parcours doit être validé sur appareil avec carnet réel.
 5. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
 6. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
@@ -67,10 +68,10 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 58 cas distincts, 116 exécutions, 0 échec, 0 ignoré |
+| `gradlew test` | succès, 62 cas distincts, 124 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK 118 511 139 octets |
-| `gradlew assembleRelease` | succès, APK signé v2 de 103 394 119 octets, SHA-256 consigné dans `CHANGELOG.md` |
+| `gradlew assembleDebug` | succès, APK 118 511 199 octets |
+| `gradlew assembleRelease` | succès, APK signé v2 de 103 394 179 octets, SHA-256 consigné dans `CHANGELOG.md` |
 | `gradlew bundleRelease` | succès local, AAB 47 558 559 octets |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |

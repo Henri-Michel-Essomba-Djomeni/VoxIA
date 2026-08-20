@@ -25,7 +25,7 @@ Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 
 | R-014 | OCR sensible exposé par export | 12 | COO | 3 | avertissement, confirmation, test presse-papiers/chooser | En réduction |
 | R-015 | Boutons/caméra inopérants sans service ou micro | 20 | CTO | 0 | file/bind et feedback testés dans `ff300c1` ; appareil requis | En validation P0 |
 | R-016 | États STT/TTS/OCR bloqués | 20 | CTO | 0 | terminaisons ciblées testées dans `ff300c1` ; timeouts restants | En réduction P0 |
-| R-017 | Langues UI/service/STT/TTS divergentes | 12 | CTO | 0 | source de vérité unique + tests | Ouvert P0 |
+| R-017 | Langues UI/service/STT/TTS divergentes | 12 | CTO | 0 | politique FR-only testée dans `84d2389` ; appareil requis | En validation P0 |
 | R-018 | Confirmation sans expiration/contact ambigu | 20 | CTO | 0 | jetons, délais et choix testés dans `6047ea1` ; appareil requis | En validation P0 |
 | R-019 | Double parole TalkBack/TTS | 20 | Accessibilité | 1 | propriétaire audio unique + 30 scénarios | Ouvert |
 | R-020 | CVE transitives OkHttp/Okio | 16 | CTO/Sécurité | 0 | contraintes sûres + scan graphe final | Ouvert P0 |
@@ -38,7 +38,7 @@ Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 
 
 ## Top 5 du cycle actif
 
-1. R-017 — langue incohérente entre UI, service, STT et TTS.
+1. R-019 — collision TalkBack/TTS et audio focus.
 2. R-016 — timeouts vocaux/OCR restant à couvrir.
 3. R-018 — preuve appareil des confirmations et contacts.
 4. R-020 — dépendances runtime vulnérables.
