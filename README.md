@@ -1,35 +1,58 @@
-# VOXIA alpha interne
+# VOXIA — alpha interne
 
-VOXIA est actuellement un prototype Android vocal et visuel francophone. Le dépôt doit être lu comme une base de travail interne, pas comme une version publique validée.
+VOXIA est un assistant Android vocal et visuel, conçu en priorité pour aider une personne aveugle ou malvoyante francophone à lire, reconnaître des informations utiles et exécuter des actions simples sur son téléphone.
 
-## État réel
+Le dépôt contient aujourd'hui un **prototype interne**, pas une version publique validée. L'objectif actif est de livrer une première version **hors ligne, sûre, accessible et vérifiée sur téléphone réel** avant d'ajouter des fonctions cloud.
 
-- Application Android `com.voxia.assistant`, compatible Android 10/API 29 ou supérieur.
-- Interaction principale par bouton vocal, basée sur Android `SpeechRecognizer`.
-- Synthèse vocale Android TTS.
-- Vision générique via ML Kit Image Labeling, OCR latin et lecture de codes-barres.
-- Actions système limitées : composeur d'appel, ouverture d'application, alarmes/minuteurs, volume, date, heure, batterie et notifications après autorisation.
-- Classification d'intentions par règles locales, sans modèle `intent_classifier.tflite` livré.
-- Aucun modèle Vosk, YOLO ou classifieur VOXIA entraîné n'est embarqué dans l'application.
+## État au 20 août 2026
 
-## Artefact de baseline
+- Source : `0.1.0-alpha-internal`, Android 10/API 29 minimum, `targetSdk 34`.
+- Voix : Android `SpeechRecognizer` et `TextToSpeech` ; aucun modèle Vosk ou Whisper embarqué.
+- Vision : OCR latin, étiquetage générique et codes-barres ML Kit ; aucun modèle YOLO VOXIA embarqué.
+- Intentions : règles Kotlin locales ; aucun classifieur TFLite livré.
+- Produit : pipeline code-barres présent, mais catalogue local vide hors en-tête.
+- Vérification locale : 35 tests unitaires distincts réussis sur debug et release, lint sans erreur, APK debug et AAB release construits.
+- Validation terrain : 0 scénario sur 30 exécuté ; TalkBack, caméra, microphone, permissions, mode avion et performances restent à valider sur téléphone réel.
+- Décision de diffusion : **NO-GO public** jusqu'au franchissement des gates du plan directeur.
 
-L'APK `VOXIA-1.0.0-release.apk` présent dans le dépôt est conservé comme artefact de baseline historique. Il ne doit pas être présenté comme une version 1.0 publique ni comme une validation produit.
+## Objectif de la version hors ligne
 
-La version source courante est marquée `0.1.0-alpha-internal`.
+La première livraison exploitable doit garantir trois parcours sans compte ni clé privée :
 
-## Documents importants
+1. **Lire** un document avec guidage caméra, contrôle de la lecture et erreurs compréhensibles.
+2. **Reconnaître** un code-barres ou une information visuelle limitée, avec source ou abstention.
+3. **Agir** sur le téléphone avec confirmation des actions sensibles et annulation fiable.
 
-- Plan directeur : [PLAN_ACTION_VOXIA.md](PLAN_ACTION_VOXIA.md)
-- Journal de reprise Codex : [CODEX_EVOLUTION_VOXIA.md](CODEX_EVOLUTION_VOXIA.md)
-- Installation et limites de la baseline : [GUIDE_INSTALLATION.md](GUIDE_INSTALLATION.md)
-- Inventaire fonctionnel : [docs/FONCTIONS_REELLES.md](docs/FONCTIONS_REELLES.md)
-- Registre des risques : [docs/REGISTRE_RISQUES.md](docs/REGISTRE_RISQUES.md)
-- Registre des décisions : [docs/REGISTRE_DECISIONS.md](docs/REGISTRE_DECISIONS.md)
-- Gouvernance des données : [docs/GOUVERNANCE_DONNEES.md](docs/GOUVERNANCE_DONNEES.md)
-- Évaluation reproductible : [evaluation/README.md](evaluation/README.md)
-- Protocole téléphone réel : [docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md](docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md)
+Les fonctions en ligne seront une couche optionnelle ultérieure, avec consentement, politique de confidentialité et repli local explicite.
 
-## Règle de communication
+## Source de vérité documentaire
 
-Aucun chiffre de précision, WER, CER, F1, taux de réussite ou disponibilité publique ne doit être annoncé sans protocole, jeu de test gelé, commit Git et rapport reproductible dans `evaluation/`.
+| Besoin | Document autoritaire |
+|---|---|
+| Où va le produit, dans quel ordre et avec quelles gates | [PLAN_ACTION_VOXIA.md](PLAN_ACTION_VOXIA.md) |
+| Ce qui existe réellement dans le code | [docs/FONCTIONS_REELLES.md](docs/FONCTIONS_REELLES.md) |
+| Ce qui a changé par version et ce qui a été vérifié | [CHANGELOG.md](CHANGELOG.md) |
+| Décisions d'architecture et de produit | [docs/REGISTRE_DECISIONS.md](docs/REGISTRE_DECISIONS.md) |
+| Risques ouverts, responsables et réduction | [docs/REGISTRE_RISQUES.md](docs/REGISTRE_RISQUES.md) |
+| Installation, build et validation d'un artefact | [GUIDE_INSTALLATION.md](GUIDE_INSTALLATION.md) |
+| Données et consentement | [docs/GOUVERNANCE_DONNEES.md](docs/GOUVERNANCE_DONNEES.md) |
+| Mesures reproductibles | [evaluation/README.md](evaluation/README.md) |
+| Validation sur téléphone | [docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md](docs/PROTOCOLE_TESTS_TERRAIN_TELEPHONE.md) |
+
+`CODEX_EVOLUTION_VOXIA.md` et `STRATEGIE_IMPLEMENTATION.md` sont conservés comme archives/pointeurs historiques. Ils ne doivent plus recevoir de nouvelles décisions.
+
+## Commandes de contrôle
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+.\gradlew.bat test
+.\gradlew.bat lintDebug
+.\gradlew.bat assembleDebug
+.\gradlew.bat bundleRelease
+```
+
+L'APK debug courant est généré dans `app/build/outputs/apk/debug/app-debug.apk`. L'APK `VOXIA-1.0.0-release.apk` à la racine est une baseline historique et ne représente pas la source actuelle.
+
+## Règle de publication
+
+Aucun chiffre de précision, WER, CER, F1, taux de réussite ou disponibilité publique ne doit être annoncé sans protocole, dataset gelé, commit Git et rapport reproductible. Aucune version ne doit être dite accessible ou prête tant que les tests téléphone/TalkBack correspondants ne sont pas exécutés.

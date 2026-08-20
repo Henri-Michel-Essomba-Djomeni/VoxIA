@@ -1,6 +1,14 @@
-# VOXIA alpha interne — Installation de baseline
+# VOXIA — build, installation et validation
 
-Ce guide décrit l'installation de l'APK historique conservé dans le dépôt. Il sert aux tests internes et à la mesure de baseline, pas à une diffusion publique.
+**Dernière revue :** 20 août 2026
+**Source courante :** `0.1.0-alpha-internal`
+**Version cible :** `0.2.0-alpha-offline`
+
+Ce guide distingue trois objets qui ne doivent jamais être confondus :
+
+1. l'APK historique `VOXIA-1.0.0-release.apk` ;
+2. les artefacts reconstruits depuis la source courante ;
+3. la future release terrain hors ligne, qui n'existe pas encore.
 
 ## APK de baseline
 
@@ -83,3 +91,39 @@ $env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
 ```
 
 L'APK debug généré se trouve dans `app/build/outputs/apk/debug/app-debug.apk`. L'AAB release se trouve dans `app/build/outputs/bundle/release/app-release.aab` ; sa signature dépend de la présence d'un `keystore.properties` local. Ces artefacts servent au contrôle technique interne ; ils ne remplacent pas l'APK de baseline historique ni une release pilote signée.
+
+Dernière vérification locale au 20 août 2026 :
+
+- 35 tests distincts réussis sur debug et release ;
+- lint : 0 erreur, 12 avertissements de versions ;
+- APK debug : 118 443 615 octets ;
+- AAB release local : 47 558 559 octets.
+
+Ces tailles ne sont pas des constantes. Le manifest d'une release doit toujours être généré depuis l'artefact exact.
+
+## Préflight hors ligne obligatoire
+
+Avant de qualifier une future APK de « hors ligne » :
+
+1. installer l'APK et préparer explicitement les packs vocaux/modèles autorisés ;
+2. noter le moteur STT et TTS actif ;
+3. activer le mode avion ;
+4. redémarrer l'application à froid puis à chaud ;
+5. vérifier Lire, Identifier, Scanner produit, actions locales et messages d'erreur ;
+6. vérifier que la traduction est annoncée indisponible si son modèle n'a pas été préchargé ;
+7. vérifier qu'aucun fallback réseau silencieux ne se produit ;
+8. exécuter TalkBack, police 200 %, refus de permissions et annulation ;
+9. enregistrer appareil, OS, commit, version, hash APK et résultat.
+
+La commande vocale offline n'est garantie que si Android fournit réellement un recognizer local compatible. Dans le cas contraire, l'interface tactile accessible doit rester utilisable et expliquer la limite.
+
+## Signature, hash et rollback
+
+Pour chaque release terrain :
+
+- vérifier la signature de l'APK ;
+- publier le SHA-256 ;
+- conserver le commit et le manifest de tests ;
+- tester installation fraîche et mise à jour depuis la version précédente ;
+- conserver l'APK précédent signé comme rollback ;
+- ne jamais utiliser l'APK historique 1.0.0 comme rollback de la future branche 0.2.0 sans test de compatibilité.

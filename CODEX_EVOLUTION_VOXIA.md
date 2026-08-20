@@ -1,4 +1,8 @@
-# CODEX — Évolution VOXIA Phase 0 / Phase 1 initiale
+# CODEX — archive d'évolution VOXIA
+
+> **Archive figée le 20 août 2026.** Ce journal de sessions est conservé pour la traçabilité historique et ne reçoit plus de nouvelles entrées. L'évolution produit active est tenue dans `CHANGELOG.md`, le plan dans `PLAN_ACTION_VOXIA.md` et les preuves dans `evaluation/`.
+
+# Évolution VOXIA Phase 0 / Phase 1 initiale
 
 Date : 2026-07-16  
 Agent : Codex  

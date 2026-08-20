@@ -1,22 +1,55 @@
-# Registre des risques — VOXIA
+# VOXIA — registre des risques
 
-| ID | Risque | Impact | Probabilité | Réduction | État |
-|---|---|---:|---:|---|---|
-| R-001 | Transcription, OCR ou réponse dans les logs release | Élevé | Moyen | `PrivacyLog`, revue `rg "Log\\."`, tests release | En réduction |
-| R-002 | Confusion entre SpeechRecognizer et Vosk | Moyen | Élevé | Classe STT renommée, docs corrigées | Réduit |
-| R-003 | Chiffres de précision non traçables | Élevé | Élevé | Docs corrigées, harnais `evaluation/` | En réduction |
-| R-004 | Mauvaise action vocale exécutée | Élevé | Moyen | Confirmation orale ajoutée pour appel/alarme/rappel/ouverture d'app (`ConfirmationParser` + `VoiceAssistantService.requestConfirmation`) ; actions différées par permission purgées en cas de refus ; taux de fausse action toujours à mesurer en conditions réelles | En réduction |
-| R-005 | OCR inutilisable par mauvais cadrage | Élevé | Élevé | `FrameQualityAnalyzer` filtre les captures trop sombres/claires/floues avant OCR (premier incrément post-capture) ; guidage temps réel et mesure CER/WER réelle restent à faire | En réduction |
-| R-006 | STT fragile aux accents/bruits locaux | Élevé | Élevé | Manifeste source FLEURS français reproductible créé pour préparer une mesure WER ; Common Voice français identifié pour accents/variantes ; collecte terrain consentie par accent, bruit et appareil toujours requise | En réduction |
-| R-007 | APK trop lourd pour le terrain | Moyen | Élevé | ABI filtrées `arm64-v8a`/`x86_64`, AAB release généré en CI ; mesure de taille terrain et modules à la demande restent à faire | En réduction |
-| R-008 | Produit présenté comme validé | Élevé | Moyen | Alpha interne, documents de limites | En réduction |
-| R-009 | Identification financière erronée | Très élevé | Moyen | `FinancialSafety` force une abstention sur argent/monnaie/coupure/CFA/XAF/XOF et labels associés ; aucune valeur ni authenticité annoncée | En réduction |
-| R-010 | Accessibilité TalkBack incomplète | Élevé | Moyen | Descriptions accessibles synchronisées pour transcription/réponse, boutons moins fragiles à grande police ; protocole et checklist téléphone réel prêts ; exécution TalkBack terrain toujours requise | En réduction |
-| R-011 | Dialogue de permission ou action différée incohérente | Moyen | Moyen | Rationale avant demande système, `POST_NOTIFICATIONS` séquencé après audio, purge des actions caméra/contacts refusées ; cas terrain FIELD-002 à FIELD-007 prêts pour vérification appareil | En réduction |
-| R-012 | Produit identifié avec des informations inventées ou non sourcées | Élevé | Moyen | Catalogue local exigeant source/date, réponse explicite "produit inconnu", interdiction de prix/allergènes/composition sans source | En réduction |
-| R-013 | Lecture OCR longue impossible à contrôler | Moyen | Élevé | Segmentation OCR, session de lecture, commandes et boutons suivant/précédent/répéter, vitesse réglable, copie/partage explicites ; cas terrain FIELD-008 à FIELD-010 prêts | En réduction |
-| R-014 | Texte OCR sensible exposé via presse-papiers ou partage | Élevé | Moyen | Actions copie/partage explicites, avertissement UI avant bouton, confirmation orale avant export vocal, partage via chooser Android ; cas terrain FIELD-011/FIELD-012 prêts | En réduction |
+**Propriétaires :** COO + CTO
+**Dernière revue :** 20 août 2026
+**Cadence :** hebdomadaire et à chaque gate
+**Score :** probabilité × impact, de 1 à 25
 
-## Cadence de revue
+Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 exige une décision conjointe COO/CTO avant release.
 
-Revoir ce registre à chaque fin de phase et après tout changement affectant voix, vision, données, permissions ou actions Android.
+| ID | Risque | Score | Owner | Gate | Réduction / preuve attendue | État |
+|---|---|---:|---|---|---|---|
+| R-001 | Contenu utilisateur dans les logs release | 12 | CTO | 0 | API de logs structurée + test logcat release | En réduction |
+| R-002 | Confusion SpeechRecognizer/Vosk | 6 | CTO | 0 | noms/docs honnêtes, aucun modèle Vosk annoncé | Réduit |
+| R-003 | Métriques non traçables | 12 | COO | 2 | rapport, commit, dataset gelé, protocole | En réduction |
+| R-004 | Fausse action vocale | 20 | CTO | 0/3 | tests adversariaux, confirmation, expiration, taux terrain | Ouvert |
+| R-005 | OCR inutilisable par mauvais cadrage | 20 | Accessibilité | 1/3 | guidage temps réel + comparaison terrain | Ouvert |
+| R-006 | STT fragile aux accents/bruits | 16 | ML/Data | 2/3 | collecte consentie et WER par sous-groupe | Ouvert |
+| R-007 | Artefact trop lourd | 12 | CTO | 4 | AAB par appareil, modules/modèles optimisés | En réduction |
+| R-008 | Prototype présenté comme produit validé | 12 | COO | Toutes | vocabulaire alpha + gates et preuves | En réduction |
+| R-009 | Identification financière erronée | 20 | COO | Toutes | abstention, aucune valeur/authenticité | En réduction |
+| R-010 | TalkBack incomplet | 20 | Accessibilité | 1/3 | tests TalkBack utilisateurs, 0 bloqueur | Ouvert |
+| R-011 | Permissions/actions différées incohérentes | 16 | CTO | 0/3 | tests instrumentés refus/retour/rotation | Ouvert |
+| R-012 | Données produit inventées/non sourcées | 16 | COO | 2 | catalogue avec source/date, inconnu sinon | En réduction |
+| R-013 | Lecture OCR longue incontrôlable | 12 | CTO | 1/3 | navigation, pause/annulation, test terrain | En réduction |
+| R-014 | OCR sensible exposé par export | 12 | COO | 3 | avertissement, confirmation, test presse-papiers/chooser | En réduction |
+| R-015 | Boutons/caméra inopérants sans service ou micro | 20 | CTO | 0 | découplage + feedback + tests UI | Ouvert P0 |
+| R-016 | États STT/TTS/OCR bloqués | 20 | CTO | 0 | callbacks terminaux, timeouts, tests d'erreur | Ouvert P0 |
+| R-017 | Langues UI/service/STT/TTS divergentes | 12 | CTO | 0 | source de vérité unique + tests | Ouvert P0 |
+| R-018 | Confirmation sans expiration/contact ambigu | 20 | CTO | 0 | transaction expirante + désambiguïsation | Ouvert P0 |
+| R-019 | Double parole TalkBack/TTS | 20 | Accessibilité | 1 | propriétaire audio unique + 30 scénarios | Ouvert |
+| R-020 | CVE transitives OkHttp/Okio | 16 | CTO/Sécurité | 0 | contraintes sûres + scan graphe final | Ouvert P0 |
+| R-021 | AAB CI potentiellement non signé | 12 | CTO | 0/4 | Play App Signing/secret manager + vérification | Ouvert P0 |
+| R-022 | `targetSdk 34` incompatible publication Play | 20 | CTO | 0 | migration API 36 + matrice Android 15/16 | Ouvert P0 |
+| R-023 | Revendication « hors ligne » fausse | 20 | COO | 0/3 | contrat, préflight, mode avion cold/warm | Ouvert P0 |
+| R-024 | Absence de tests instrumentés et terrain | 20 | QA | 1/3 | androidTest + 30/30 checklist + appareils | Ouvert |
+| R-025 | Téléchargements/modèles sans hash | 16 | ML/Data | 0 | manifest provenance, SHA-256, extraction sûre | Ouvert P0 |
+| R-026 | Notifications privées en RAM sans purge/TTL | 16 | COO/CTO | 0/3 | TTL, purge, exclusions et confirmation | Ouvert |
+
+## Top 5 du cycle actif
+
+1. R-015 — actions silencieuses et dépendance au microphone.
+2. R-016 — états vocaux/OCR bloqués.
+3. R-018 — confirmations persistantes et contacts ambigus.
+4. R-020 — dépendances runtime vulnérables.
+5. R-022 — migration API 36.
+
+## Acceptation et fermeture
+
+Chaque fermeture doit indiquer dans le commit ou le journal :
+
+- test ou rapport prouvant la réduction ;
+- risque résiduel ;
+- date et commit ;
+- approbation du propriétaire ;
+- décision COO+CTO si le score initial était supérieur ou égal à 15.

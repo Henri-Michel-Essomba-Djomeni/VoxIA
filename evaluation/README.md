@@ -2,6 +2,14 @@
 
 Ce dossier contient les premiers harnais de mesure pour passer d'un prototype à une baseline vérifiable. Les templates fournis sont factices et ne doivent jamais servir de chiffres publics.
 
+## Contrat qualité
+
+- Une gate exige **zéro test en échec** ; tout test ignoré doit avoir une justification et un owner.
+- Les fichiers `template` et `smoke_*_template` sont des fixtures d'exécution, jamais des KPI.
+- Le harnais Intent actuel est une baseline Python distincte du moteur Kotlin livré. Aucun résultat d'intentions n'est publiable tant que l'évaluateur n'exécute pas exactement la logique de production ou un artefact partagé.
+- Les mesures de latence, RAM, batterie et démarrage doivent provenir d'un téléphone réel et d'une build proche de la release.
+- Un rapport sans commit, moteur, appareil, paramètres, dataset gelé et limites est invalide.
+
 ## Structure
 
 ```text

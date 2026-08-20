@@ -151,3 +151,35 @@
 - Motivation : les risques STT, caméra, TTS, TalkBack, permissions constructeur, batterie et intégrations Android ne peuvent pas être validés sérieusement sans matériel réel.
 - Conséquence : aucune décision pilote ne doit être prise uniquement sur émulateur. Une première passe peut démarrer avec un téléphone ARM64 Android 10+, puis s'élargir à plusieurs versions et surcouches Android.
 - Limite assumée : cette tranche prépare l'exécution et la collecte de preuves ; elle ne remplace pas une session réellement faite avec appareil branché et résultats renseignés.
+
+## ADR-0018 — Établir les sources documentaires d'autorité
+
+- Date : 2026-08-20
+- Statut : accepté
+- Décision : `PLAN_ACTION_VOXIA.md` pilote la direction et les gates ; `docs/FONCTIONS_REELLES.md` décrit l'état vérifié ; `CHANGELOG.md` suit les versions ; les registres conservent décisions et risques ; `evaluation/` conserve les preuves. `CODEX_EVOLUTION_VOXIA.md` et `STRATEGIE_IMPLEMENTATION.md` deviennent historiques.
+- Motivation : supprimer les contradictions entre plan, stratégie, journal de sessions et état du code.
+- Conséquence : aucun nouveau document de roadmap ne doit être créé sans remplacer explicitement le précédent.
+
+## ADR-0019 — Livrer la version hors ligne avant la couche cloud
+
+- Date : 2026-08-20
+- Statut : accepté
+- Décision : la version cible est `0.2.0-alpha-offline`. Après préparation documentée, chaque parcours obligatoire doit produire un résultat ou une erreur accessible en mode avion, sans backend VOXIA ni fallback réseau silencieux.
+- Motivation : garantir une valeur minimale indépendante de la connectivité, du coût data et d'une clé privée.
+- Conséquence : STT/TTS système et traduction sont conditionnels aux packs/modèles locaux ; leur disponibilité doit être vérifiée et annoncée. Les fonctions cloud restent hors périmètre jusqu'à la gate offline.
+
+## ADR-0020 — Promouvoir les versions par gates et double décision COO/CTO
+
+- Date : 2026-08-20
+- Statut : accepté
+- Décision : une version franchit une gate uniquement avec preuves liées au commit. Une release exige un `TECH-GO` du CTO et un `PRODUCT/SAFETY-GO` du COO.
+- Motivation : empêcher qu'une réussite de compilation soit confondue avec une validation produit, accessibilité ou sécurité.
+- Conséquence : un risque coté 15 à 25 ne peut pas être accepté par une seule responsabilité.
+
+## ADR-0021 — Distinguer artefact historique, APK terrain et AAB de distribution
+
+- Date : 2026-08-20
+- Statut : accepté
+- Décision : l'APK `VOXIA-1.0.0-release.apk` reste une baseline historique. La version offline doit produire un APK ARM64 signé/hashé pour le terrain et un AAB signé pour la distribution.
+- Motivation : éviter la confusion entre numéro marketing historique, source actuelle et artefact CI potentiellement non signé.
+- Conséquence : chaque manifest de release indique version, versionCode, commit, SHA-256, signature, taille, appareils et résultats de gate.

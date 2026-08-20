@@ -1,8 +1,8 @@
-# Sources web et données de travail — VOXIA
+# Registre des sources de données — VOXIA
 
-Date : 2026-07-22
-Agent : Codex
-Portée : sources web analysées pour préparer des données de travail sans modifier `PLAN_ACTION_VOXIA.md`.
+**Owner :** ML/Data Lead
+**Dernière revue :** 20 août 2026
+**Portée :** provenance, licence et limites des sources utilisées ou candidates
 
 ## Règle appliquée
 

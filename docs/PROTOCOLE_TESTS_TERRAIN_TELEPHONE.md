@@ -42,7 +42,8 @@ Pour une toute première passe :
 Pour une passe professionnelle avant pilote :
 
 - 1 téléphone bas ou milieu de gamme Android 10/11 ;
-- 1 téléphone Android 13/14 pour `POST_NOTIFICATIONS` ;
+- 1 téléphone Android 14 ;
+- 1 téléphone Android 16 pour la cible API 36 et les comportements récents ;
 - 1 téléphone d'une surcouche constructeur courante ;
 - tests en français avec au moins deux accents et deux environnements sonores.
 
@@ -107,6 +108,21 @@ Une passe téléphone est acceptable seulement si :
 - un produit non présent dans le catalogue reste annoncé comme inconnu ;
 - TalkBack peut atteindre les contrôles principaux ;
 - aucune transcription brute, OCR brut ou réponse utilisateur sensible n'apparaît dans les logs release.
+
+Ces critères couvrent les gates appareil, accessibilité et release du plan directeur. Ajouter obligatoirement :
+
+- démarrage à froid et à chaud en mode avion ;
+- disponibilité réelle des moteurs STT/TTS locaux et absence de fallback réseau silencieux ;
+- action sur chaque bouton avant puis après connexion du service ;
+- erreur STT vide, erreur TTS et erreur d'initialisation OCR avec retour à un état utilisable ;
+- timeout d'une confirmation et annulation d'une action différée ;
+- désambiguïsation de deux contacts proches ;
+- changement de langue sans divergence UI/STT/TTS ;
+- TalkBack actif pendant les réponses VOXIA, sans double parole ;
+- audio focus avec appel/notification/musique ;
+- police 200 %, taille d'affichage maximale, portrait et paysage.
+
+Une release terrain exige une checklist entièrement renseignée : aucun cas critique ne peut rester `not_run`.
 
 ## Sortie attendue
 
