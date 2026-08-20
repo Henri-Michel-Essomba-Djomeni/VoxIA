@@ -2,7 +2,7 @@
 
 **Statut :** inventaire factuel autoritaire
 **Dernière vérification :** 20 août 2026
-**Commit applicatif de référence :** `ff300c1bb1e324ac665af194032b3d93d7e2a4b9`
+**Commit applicatif de référence :** `6047ea1`
 **Version source :** `0.1.1-alpha-internal`
 
 Statuts :
@@ -30,7 +30,7 @@ Statuts :
 | Vision | Abstention financière | Fonctionnel code | Oui | règles et tests synthétiques | pas de test caméra réel ; aucune reconnaissance de valeur |
 | Vision | Modèle YOLO VOXIA | Absent | Non | test Python échoue sans modèle | 10 tests ignorés ; benchmark simulé |
 | Traduction | OCR puis traduction | Partiel | Conditionnel | ML Kit Language ID/Translate | modèle à télécharger ; erreurs trop génériques ; pas de contrôle qualité image |
-| Actions | Appel via composeur | Partiel | Oui | `ACTION_DIAL` + confirmation | contact ambigu, confirmation sans expiration |
+| Actions | Appel via composeur | Partiel | Oui | choix explicite + confirmation expirante + 14 tests | validation contacts/appareil réelle absente |
 | Actions | Ouvrir application | Partiel | Oui | launcher Android + confirmation | correspondance approximative |
 | Actions | Alarmes/minuteurs | Partiel | Oui | intents Android + confirmation | dépend de l'application système |
 | Actions | Volume/date/heure/batterie | Fonctionnel code | Oui | API Android | non validé dans une campagne appareil |
@@ -58,20 +58,19 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 1. Le découplage caméra/microphone et la file d'actions sont implémentés, mais restent à valider sur appareil, refus de permission et rotation.
 2. Les sorties terminales STT vide, TTS en erreur et OCR à l'initialisation sont corrigées en JVM ; les timeouts globaux restent incomplets.
 3. L'état de langue peut diverger entre service, STT, TTS et interface.
-4. Les confirmations et demandes de contact n'expirent pas.
-5. La recherche contact prend le premier résultat partiel sans désambiguïsation.
-6. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
-7. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
-8. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
+4. Confirmations et contacts disposent maintenant de jetons, délais et désambiguïsation, mais le parcours doit être validé sur appareil avec carnet réel.
+5. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
+6. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
+7. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
 
 ## Vérifications exécutées
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 44 cas distincts, 88 exécutions, 0 échec, 0 ignoré |
+| `gradlew test` | succès, 58 cas distincts, 116 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK 118 461 987 octets |
-| `gradlew assembleRelease` | succès, APK signé v2 de 103 377 735 octets, SHA-256 consigné dans `CHANGELOG.md` |
+| `gradlew assembleDebug` | succès, APK 118 511 139 octets |
+| `gradlew assembleRelease` | succès, APK signé v2 de 103 394 119 octets, SHA-256 consigné dans `CHANGELOG.md` |
 | `gradlew bundleRelease` | succès local, AAB 47 558 559 octets |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |

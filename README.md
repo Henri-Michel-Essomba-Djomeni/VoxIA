@@ -11,8 +11,8 @@ Le dépôt contient aujourd'hui un **prototype interne**, pas une version publiq
 - Vision : OCR latin, étiquetage générique et codes-barres ML Kit ; aucun modèle YOLO VOXIA embarqué.
 - Intentions : règles Kotlin locales ; aucun classifieur TFLite livré.
 - Produit : pipeline code-barres présent, mais catalogue local vide hors en-tête.
-- Vérification locale : 44 tests unitaires distincts réussis sur debug et release, lint sans erreur, APK debug et release construits.
-- Étape 0 en cours : les actions tactiles/caméra ne dépendent plus du microphone et les sorties terminales STT/TTS/OCR critiques sont protégées par des tests JVM.
+- Vérification locale : 58 tests unitaires distincts réussis sur debug et release, lint sans erreur, APK debug et release construits.
+- Étape 0 en cours : actions caméra sans microphone, terminaisons STT/TTS/OCR et confirmations/contact expirants sont maintenant protégés par des tests JVM.
 - Validation terrain : 0 scénario sur 30 exécuté ; TalkBack, caméra, microphone, permissions, mode avion et performances restent à valider sur téléphone réel.
 - Décision de diffusion : **NO-GO public** jusqu'au franchissement des gates du plan directeur.
 
