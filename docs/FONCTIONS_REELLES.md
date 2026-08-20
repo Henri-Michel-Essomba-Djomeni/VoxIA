@@ -2,8 +2,8 @@
 
 **Statut :** inventaire factuel autoritaire
 **Dernière vérification :** 20 août 2026
-**Commit de référence :** `b2fe2d461f13637af378356a8ce0839e0e7c49f0`
-**Version source :** `0.1.0-alpha-internal`
+**Commit applicatif de référence :** `ff300c1bb1e324ac665af194032b3d93d7e2a4b9`
+**Version source :** `0.1.1-alpha-internal`
 
 Statuts :
 
@@ -17,13 +17,13 @@ Statuts :
 
 | Domaine | Fonction | Statut | Offline | Preuve actuelle | Limite principale |
 |---|---|---|---|---|---|
-| Voix | Écoute ponctuelle | Partiel | Conditionnel | Android `SpeechRecognizer` branché | fournisseur système possiblement réseau ; résultat vide pouvant bloquer l'état |
-| Voix | Synthèse vocale | Partiel | Conditionnel | Android `TextToSpeech` branché | dépend du moteur/pack ; collision TalkBack et erreur TTS non terminale |
+| Voix | Écoute ponctuelle | Partiel | Conditionnel | Android `SpeechRecognizer` + test résultat vide | fournisseur système possiblement réseau ; aucun test appareil |
+| Voix | Synthèse vocale | Partiel | Conditionnel | Android `TextToSpeech` + tests callback terminal | dépend du moteur/pack ; collision TalkBack non résolue |
 | Voix | Wake word | Absent | Non | stub retournant toujours faux | aucun modèle livré |
 | Intentions | Classification locale | Partiel | Oui | règles Kotlin + tests unitaires | mots isolés trop permissifs ; harnais Python différent du moteur livré |
 | Intentions | Modèle TFLite | Absent | Non | aucun fichier livré | ne pas annoncer de modèle entraîné |
 | Vision | Étiquetage générique | Partiel | Oui | ML Kit embarqué | non spécialisé, erreurs et absence d'objet parfois confondues |
-| Vision | OCR latin | Partiel | Oui | ML Kit + contrôle qualité post-capture | initialisation fragile ; aucun guidage temps réel |
+| Vision | OCR latin | Partiel | Oui | ML Kit + contrôle qualité + test exception d'initialisation | aucun guidage temps réel ni test caméra réel |
 | Vision | Lecture segmentée | Fonctionnel code | Oui | session, boutons et tests de logique | aucun test appareil/TalkBack, pas de pause/reprise native |
 | Vision | Codes-barres | Partiel | Oui | scanner ML Kit branché | catalogue local vide hors en-tête |
 | Vision | Produit sourcé | Partiel | Oui | garde-fous catalogue testés | aucune fiche produit terrain |
@@ -36,7 +36,7 @@ Statuts :
 | Actions | Volume/date/heure/batterie | Fonctionnel code | Oui | API Android | non validé dans une campagne appareil |
 | Actions | Notifications | Partiel | Oui | listener système | 30 éléments en RAM sans TTL/purge ; lecture sensible |
 | Export | Copier/partager OCR | Partiel | Oui | avertissement + confirmation/chooser | presse-papiers et application cible hors contrôle |
-| Permissions | Explication avant demande | Partiel | Oui | rationales présentes | parcours refus/retour non instrumentés |
+| Permissions | Explication avant demande | Partiel | Oui | rationales + file d'actions testée | parcours refus/retour non instrumentés |
 | Accessibilité | Contraste et cibles | Fonctionnel statique | Oui | contrastes explicites AAA, boutons 56–72 dp | thème/focus runtime non mesurés |
 | Accessibilité | TalkBack et statuts | Partiel | Oui | libellés et live regions présents | double parole probable, 0 test réel |
 | Accessibilité | Police 200 % | Partiel | Oui | tailles `sp`, hauteurs adaptatives | grille à trois colonnes non testée |
@@ -55,24 +55,23 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 ## Problèmes P0 confirmés
 
-1. Les fonctions caméra et plusieurs boutons peuvent ne rien faire tant que le service vocal n'est pas lié ou si le microphone est refusé.
-2. STT peut rester en écoute après un résultat vide.
-3. Une erreur TTS peut empêcher le callback attendu et bloquer la séquence.
-4. L'initialisation OCR utilise un `future.get()` insuffisamment protégé.
-5. L'état de langue peut diverger entre service, STT, TTS et interface.
-6. Les confirmations et demandes de contact n'expirent pas.
-7. La recherche contact prend le premier résultat partiel sans désambiguïsation.
-8. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
-9. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
-10. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
+1. Le découplage caméra/microphone et la file d'actions sont implémentés, mais restent à valider sur appareil, refus de permission et rotation.
+2. Les sorties terminales STT vide, TTS en erreur et OCR à l'initialisation sont corrigées en JVM ; les timeouts globaux restent incomplets.
+3. L'état de langue peut diverger entre service, STT, TTS et interface.
+4. Les confirmations et demandes de contact n'expirent pas.
+5. La recherche contact prend le premier résultat partiel sans désambiguïsation.
+6. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
+7. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
+8. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
 
 ## Vérifications exécutées
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 35 cas distincts, 70 exécutions, 0 échec |
+| `gradlew test` | succès, 44 cas distincts, 88 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK 118 443 615 octets |
+| `gradlew assembleDebug` | succès, APK 118 461 987 octets |
+| `gradlew assembleRelease` | succès, APK signé v2 de 103 377 735 octets, SHA-256 consigné dans `CHANGELOG.md` |
 | `gradlew bundleRelease` | succès local, AAB 47 558 559 octets |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |

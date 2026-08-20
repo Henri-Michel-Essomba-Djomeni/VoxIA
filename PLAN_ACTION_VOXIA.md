@@ -24,7 +24,7 @@ La future version en ligne sera optionnelle. Elle ne commencera qu'après valida
 | Axe | État | Décision |
 |---|---|---|
 | Build Android | Tests, lint, APK debug et AAB release réussissent localement | Base exploitable |
-| Tests unitaires | 35 cas distincts, 70 exécutions debug/release, 0 échec | Insuffisant sans tests appareil |
+| Tests unitaires | 44 cas distincts, 88 exécutions debug/release, 0 échec | Insuffisant sans tests appareil |
 | Terrain | 30/30 scénarios non exécutés | Aucun parcours utilisateur déclaré validé |
 | Voix | SpeechRecognizer/TTS Android | Corriger les états bloquants et clarifier le réseau |
 | Intentions | Règles locales trop permissives | Ajouter tests négatifs, seuils et timeouts |
@@ -221,10 +221,10 @@ Le backlog actif est limité à l'étape en cours. Au 20 août 2026, seule **l'�
 
 | ID | Résultat attendu | Owner | Statut | Preuve de sortie |
 |---|---|---|---|---|
-| P0-001 | Gouvernance finale et baseline fusionnées sur `main` | COO+CTO | En cours | commit distant, liens/docs contrôlés |
-| P0-002 | Caméra et actions UI indépendantes du micro/binding | CTO | À faire | tests UI + aucun no-op silencieux |
-| P0-003 | États STT/TTS/OCR toujours terminaux | CTO | À faire | tests erreurs/timeout/annulation |
-| P0-004 | Confirmations expirantes et contacts désambiguïsés | CTO | À faire | tests positifs/négatifs |
+| P0-001 | Gouvernance finale et baseline fusionnées sur `main` | COO+CTO | Terminé | `9ef1ac5`, liens/docs et build contrôlés |
+| P0-002 | Caméra et actions UI indépendantes du micro/binding | CTO | Implémenté, appareil requis | `ff300c1`, file testée ; preuve instrumentée/terrain restante |
+| P0-003 | États STT/TTS/OCR toujours terminaux | CTO | En validation | `ff300c1`, 9 tests ajoutés au lot ; timeouts globaux restant à traiter |
+| P0-004 | Confirmations expirantes et contacts désambiguïsés | CTO | Prochain WIP | tests positifs/négatifs |
 | P0-005 | Langue unique et cohérente | CTO | À faire | tests UI/service/STT/TTS |
 | P0-006 | TalkBack/TTS et audio focus coordonnés | Accessibilité+CTO | À faire | 30 scénarios sans double parole |
 | P0-007 | Contrat offline prouvé en mode avion | QA | À faire | rapport cold/warm + moteurs |
@@ -248,4 +248,4 @@ Une information présente dans plusieurs documents doit être détaillée dans u
 
 ## 10. Prochaine action
 
-Commencer l'étape 0 par les trois corrections qui peuvent rendre l'application inutilisable sans crash visible : callbacks STT/TTS, initialisation OCR et actions UI avant connexion du service. Ajouter les tests correspondants avant de traiter le bloc suivant.
+Traiter P0-004 : donner une durée de vie et une identité aux confirmations, puis désambiguïser les contacts avant d'ouvrir le composeur. Conserver WIP=1 et ajouter les tests positifs, négatifs et d'expiration avant de passer à P0-005.

@@ -23,8 +23,8 @@ Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 
 | R-012 | Données produit inventées/non sourcées | 16 | COO | 2 | catalogue avec source/date, inconnu sinon | En réduction |
 | R-013 | Lecture OCR longue incontrôlable | 12 | CTO | 1/3 | navigation, pause/annulation, test terrain | En réduction |
 | R-014 | OCR sensible exposé par export | 12 | COO | 3 | avertissement, confirmation, test presse-papiers/chooser | En réduction |
-| R-015 | Boutons/caméra inopérants sans service ou micro | 20 | CTO | 0 | découplage + feedback + tests UI | Ouvert P0 |
-| R-016 | États STT/TTS/OCR bloqués | 20 | CTO | 0 | callbacks terminaux, timeouts, tests d'erreur | Ouvert P0 |
+| R-015 | Boutons/caméra inopérants sans service ou micro | 20 | CTO | 0 | file/bind et feedback testés dans `ff300c1` ; appareil requis | En validation P0 |
+| R-016 | États STT/TTS/OCR bloqués | 20 | CTO | 0 | terminaisons ciblées testées dans `ff300c1` ; timeouts restants | En réduction P0 |
 | R-017 | Langues UI/service/STT/TTS divergentes | 12 | CTO | 0 | source de vérité unique + tests | Ouvert P0 |
 | R-018 | Confirmation sans expiration/contact ambigu | 20 | CTO | 0 | transaction expirante + désambiguïsation | Ouvert P0 |
 | R-019 | Double parole TalkBack/TTS | 20 | Accessibilité | 1 | propriétaire audio unique + 30 scénarios | Ouvert |
@@ -38,9 +38,9 @@ Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 
 
 ## Top 5 du cycle actif
 
-1. R-015 — actions silencieuses et dépendance au microphone.
-2. R-016 — états vocaux/OCR bloqués.
-3. R-018 — confirmations persistantes et contacts ambigus.
+1. R-018 — confirmations persistantes et contacts ambigus.
+2. R-016 — timeouts vocaux/OCR restant à couvrir.
+3. R-015 — preuve appareil du découplage microphone/caméra.
 4. R-020 — dépendances runtime vulnérables.
 5. R-022 — migration API 36.
 
