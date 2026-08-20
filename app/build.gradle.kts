@@ -18,8 +18,8 @@ android {
         applicationId = "com.voxia.assistant"
         minSdk = 29
         targetSdk = 34
-        versionCode = 3
-        versionName = "0.1.0-alpha-internal"
+        versionCode = 4
+        versionName = "0.1.1-alpha-internal"
 
         // Wake word is optional in alpha; no continuous-listening model is bundled.
 

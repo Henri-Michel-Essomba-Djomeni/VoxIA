@@ -64,10 +64,21 @@ class OCRModule(private val context: Context) {
     ) {
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
-            cameraProvider = future.get()
-            val ready = bindCamera(lifecycleOwner, previewView)
-            PrivacyLog.d(TAG, "OCRModule initialisé")
-            onReady(ready)
+            completeCameraInitialization(
+                initialize = {
+                    cameraProvider = future.get()
+                    bindCamera(lifecycleOwner, previewView)
+                },
+                onFailure = {
+                    cameraProvider = null
+                    imageCaptureUseCase = null
+                    PrivacyLog.e(TAG, "Initialisation OCR impossible")
+                },
+                onReady = { ready ->
+                    if (ready) PrivacyLog.d(TAG, "OCRModule initialisé")
+                    onReady(ready)
+                }
+            )
         }, ContextCompat.getMainExecutor(context))
     }
 
@@ -281,6 +292,25 @@ class OCRModule(private val context: Context) {
         cameraExecutor.shutdown()
         PrivacyLog.d(TAG, "OCRModule libéré")
     }
+}
+
+/**
+ * Convertit toute exception d'initialisation caméra en résultat terminal unique.
+ *
+ * Cette logique reste indépendante d'Android pour couvrir le chemin d'échec en test JVM.
+ */
+internal fun completeCameraInitialization(
+    initialize: () -> Boolean,
+    onFailure: (Exception) -> Unit = {},
+    onReady: (Boolean) -> Unit
+) {
+    val ready = try {
+        initialize()
+    } catch (error: Exception) {
+        onFailure(error)
+        false
+    }
+    onReady(ready)
 }
 
 // =========== DATA CLASSES RÉSULTATS OCR ===========

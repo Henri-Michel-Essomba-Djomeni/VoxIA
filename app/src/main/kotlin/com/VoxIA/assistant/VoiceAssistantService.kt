@@ -94,15 +94,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
-        startForeground(
-            NOTIFICATION_ID,
-            NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("VOXIA")
-                .setContentText("À l'écoute...")
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .setOngoing(true)
-                .build()
-        )
+        promoteToForegroundIfAudioAllowed()
 
         intentClassifier = IntentClassifierEngine()
         intentClassifier.loadModel()
@@ -124,9 +116,30 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         MemoryManager.load("intent")
     }
 
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        promoteToForegroundIfAudioAllowed()
+        return super.onStartCommand(intent, flags, startId)
+    }
+
     override fun onBind(intent: Intent): IBinder {
         super.onBind(intent)
         return binder
+    }
+
+    private fun promoteToForegroundIfAudioAllowed() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            return
+        }
+
+        startForeground(
+            NOTIFICATION_ID,
+            NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("VOXIA")
+                .setContentText("À l'écoute...")
+                .setSmallIcon(android.R.drawable.ic_dialog_info)
+                .setOngoing(true)
+                .build()
+        )
     }
 
     fun listenOnce() = speechManager.listenForCommand()

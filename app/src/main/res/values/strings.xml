@@ -31,14 +31,14 @@
     <string name="accessibility_response_empty">Réponse VOXIA : aucune réponse pour le moment.</string>
     <string name="accessibility_response_value">Réponse VOXIA : %1$s</string>
     <string name="accessibility_language_current_fr">Langue actuelle : français.</string>
-    <string name="permission_audio_required">Le microphone est nécessaire pour les commandes vocales.</string>
+    <string name="permission_audio_required">Le microphone n’est pas autorisé. Les commandes vocales sont indisponibles, mais les boutons et la caméra restent utilisables.</string>
     <string name="permission_camera_denied">La caméra est nécessaire pour cette fonction.</string>
     <string name="permission_contacts_denied">L\'accès aux contacts a été refusé.</string>
     <string name="permission_notifications_denied">Les notifications VOXIA peuvent être limitées sans cette autorisation.</string>
 
     <!-- Explications affichées AVANT la demande système d'autorisation (docs/REGISTRE_DECISIONS.md, ADR-0007) -->
     <string name="permission_rationale_audio_title">Autoriser le microphone</string>
-    <string name="permission_rationale_audio_message">VOXIA a besoin du microphone pour comprendre vos commandes vocales. Sans cette autorisation, l\'application ne peut pas fonctionner.</string>
+    <string name="permission_rationale_audio_message">VOXIA utilise le microphone uniquement pour comprendre vos commandes vocales. Sans cette autorisation, vous pouvez toujours utiliser les boutons, la caméra et la lecture de documents.</string>
     <string name="permission_rationale_camera_title">Autoriser la caméra</string>
     <string name="permission_rationale_camera_message">VOXIA a besoin de la caméra pour lire un document, identifier un objet, scanner un produit ou traduire un texte visible.</string>
     <string name="permission_rationale_contacts_title">Autoriser les contacts</string>
@@ -47,4 +47,8 @@
     <string name="permission_rationale_notifications_message">VOXIA utilise une notification persistante pour indiquer quand le service vocal est actif. Sans cette autorisation, Android peut masquer cette information.</string>
     <string name="permission_dialog_continue">Continuer</string>
     <string name="permission_dialog_not_now">Pas maintenant</string>
+    <string name="service_initializing">Initialisation de VOXIA en cours. Votre action va démarrer automatiquement.</string>
+    <string name="service_unavailable">VOXIA n’a pas pu démarrer. Réessayez dans quelques instants.</string>
+    <string name="service_disconnected">Le service VOXIA s’est arrêté. Touchez de nouveau la fonction souhaitée pour le relancer.</string>
+    <string name="action_cancelled_feedback">Action annulée.</string>
 </resources>

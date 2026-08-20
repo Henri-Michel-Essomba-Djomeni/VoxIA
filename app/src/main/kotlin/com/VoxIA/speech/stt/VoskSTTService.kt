@@ -21,6 +21,34 @@ data class STTResult(
     val confidence: Float = 0f
 )
 
+internal object STTResultDispatcher {
+    const val EMPTY_FINAL_RESULT_ERROR =
+        "Je n'ai pas compris. Réessayez en parlant distinctement."
+
+    fun dispatchFinal(
+        matches: List<String>,
+        confidences: FloatArray?,
+        language: SpeechLanguage,
+        onResult: (STTResult) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val recognized = matches.withIndex().firstOrNull { it.value.isNotBlank() }
+        if (recognized == null) {
+            onError(EMPTY_FINAL_RESULT_ERROR)
+            return
+        }
+
+        onResult(
+            STTResult(
+                text = recognized.value,
+                language = language,
+                isFinal = true,
+                confidence = confidences?.getOrNull(recognized.index) ?: 0f
+            )
+        )
+    }
+}
+
 class AndroidSpeechRecognizerSTTService(private val context: Context) {
 
     companion object {
@@ -127,17 +155,13 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
                             .orEmpty()
                         val confidences = results
                             ?.getFloatArray(SpeechRecognizer.CONFIDENCE_SCORES)
-                        val text = matches.firstOrNull().orEmpty()
-                        if (text.isNotBlank()) {
-                            onResult(
-                                STTResult(
-                                    text = text,
-                                    language = language,
-                                    isFinal = true,
-                                    confidence = confidences?.firstOrNull() ?: 0f
-                                )
-                            )
-                        }
+                        STTResultDispatcher.dispatchFinal(
+                            matches = matches,
+                            confidences = confidences,
+                            language = language,
+                            onResult = onResult,
+                            onError = onError
+                        )
                     }
 
                     override fun onPartialResults(partialResults: Bundle?) {
@@ -213,7 +237,7 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "L'autorisation du microphone est requise."
         SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT ->
             "La reconnaissance vocale n'est pas disponible hors ligne et le réseau est inaccessible."
-        SpeechRecognizer.ERROR_NO_MATCH -> "Je n'ai pas compris. Réessayez en parlant distinctement."
+        SpeechRecognizer.ERROR_NO_MATCH -> STTResultDispatcher.EMPTY_FINAL_RESULT_ERROR
         SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "La reconnaissance vocale est occupée. Réessayez."
         SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Je n'ai entendu aucune parole."
         12, 13 -> "Le pack vocal français n'est pas installé sur ce téléphone."

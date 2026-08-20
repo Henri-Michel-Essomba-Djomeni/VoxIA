@@ -9,6 +9,23 @@ import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
+internal class TerminalCallbackRegistry {
+    private val callbacks = ConcurrentHashMap<String, () -> Unit>()
+
+    fun register(utteranceId: String, callback: (() -> Unit)?) {
+        if (callback != null) callbacks[utteranceId] = callback
+    }
+
+    fun complete(utteranceId: String?) {
+        val callback = utteranceId?.let(callbacks::remove)
+        callback?.invoke()
+    }
+
+    fun clear() {
+        callbacks.clear()
+    }
+}
+
 data class TTSOptions(
     val urgent: Boolean = false,
     val slow: Boolean = false,
@@ -33,7 +50,7 @@ class TTSService(private val context: Context) {
     private var speechRateMultiplier = 1.0f
     private val queue = ArrayDeque<Pair<String, TTSOptions>>()
     private var isSpeaking = false
-    private val callbacks = ConcurrentHashMap<String, () -> Unit>()
+    private val callbacks = TerminalCallbackRegistry()
 
     fun init(onReady: () -> Unit, onError: () -> Unit) {
         tts = TextToSpeech(context) { status ->
@@ -56,15 +73,14 @@ class TTSService(private val context: Context) {
 
             override fun onDone(utteranceId: String?) {
                 isSpeaking = false
-                val cb = utteranceId?.let { callbacks.remove(it) }
-                cb?.invoke()
+                callbacks.complete(utteranceId)
                 processQueue()
             }
 
             override fun onError(utteranceId: String?) {
-                utteranceId?.let { callbacks.remove(it) }
                 PrivacyLog.e(TAG, "Erreur TTS utterance")
                 isSpeaking = false
+                callbacks.complete(utteranceId)
                 processQueue()
             }
         })
@@ -103,11 +119,16 @@ class TTSService(private val context: Context) {
         tts?.setPitch(if (options.urgent) 1.2f else 1.0f)
 
         val utteranceId = UUID.randomUUID().toString()
-        if (options.onDone != null) {
-            callbacks[utteranceId] = options.onDone
-        }
+        callbacks.register(utteranceId, options.onDone)
 
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        val result = tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        if (result != TextToSpeech.SUCCESS) {
+            PrivacyLog.e(TAG, "Le moteur TTS a refusé l'utterance")
+            isSpeaking = false
+            callbacks.complete(utteranceId)
+            processQueue()
+            return
+        }
         PrivacyLog.d(TAG, "TTS parle: chars=${text.length}")
     }
 
