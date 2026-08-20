@@ -31,13 +31,13 @@ object VoxiaResponses {
 
     // Réponses changement de langue
     fun switchedToFrench(): Pair<String, String> = Pair(
-        "Très bien, je passe en français.",
-        "Okay, switching to French."
+        "VOXIA est déjà en français.",
+        "VOXIA is already using French."
     )
 
-    fun switchedToEnglish(): Pair<String, String> = Pair(
-        "D'accord, je passe en anglais.",
-        "Okay, switching to English."
+    fun englishUnavailableOffline(): Pair<String, String> = Pair(
+        "La version hors ligne fonctionne actuellement uniquement en français.",
+        "The offline version currently works in French only."
     )
 
     // Présentation

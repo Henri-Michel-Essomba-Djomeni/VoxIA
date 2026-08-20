@@ -59,11 +59,41 @@ class IntentMapperTest {
         )
     }
 
+    @Test
+    fun execute_englishRequestDoesNotMutateLanguageAndExplainsOfflineLimit() {
+        val context = RecordingContext()
+
+        IntentMapper.execute(
+            PredictionResult(Intent.SWITCH_TO_ENGLISH, Language.FRENCH, confidence = 0.95f),
+            context
+        )
+
+        assertEquals(listOf("speak"), context.calls)
+        assertEquals(
+            "La version hors ligne fonctionne actuellement uniquement en français.",
+            context.lastSpoken?.first
+        )
+    }
+
+    @Test
+    fun execute_frenchRequestKeepsAllLayersOnFrench() {
+        val context = RecordingContext()
+
+        IntentMapper.execute(
+            PredictionResult(Intent.SWITCH_TO_FRENCH, Language.FRENCH, confidence = 0.95f),
+            context
+        )
+
+        assertEquals(listOf("switchLanguage:FRENCH", "speak"), context.calls)
+    }
+
     private class RecordingContext : VoxiaContext {
         val calls = mutableListOf<String>()
+        var lastSpoken: Pair<String, String>? = null
 
         override fun speak(fr: String, en: String) {
             calls += "speak"
+            lastSpoken = fr to en
         }
 
         override fun repeatLastResponse() {
@@ -99,7 +129,7 @@ class IntentMapperTest {
         }
 
         override fun switchLanguage(language: Language) {
-            calls += "switchLanguage"
+            calls += "switchLanguage:$language"
         }
 
         override fun loadVisionModule() {

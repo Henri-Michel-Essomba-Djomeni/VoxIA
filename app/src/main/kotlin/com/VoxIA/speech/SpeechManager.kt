@@ -1,6 +1,7 @@
 package com.voxia.speech
 
 import android.content.Context
+import com.voxia.language.OfflineLanguagePolicy
 import com.voxia.utils.PrivacyLog
 import com.voxia.speech.stt.AndroidSpeechRecognizerSTTService
 import com.voxia.speech.stt.SpeechLanguage
@@ -32,7 +33,7 @@ class SpeechManager(private val context: Context) {
     private val scope = CoroutineScope(Dispatchers.IO)
 
     private var state = SpeechState.IDLE
-    private var currentLanguage = SpeechLanguage.FR
+    private val currentLanguage = OfflineLanguagePolicy.speechLanguage
     private var onStateChange: ((SpeechState) -> Unit)? = null
     private var onTranscript: ((STTResult) -> Unit)? = null
     private var onCommandDetected: ((String, SpeechLanguage) -> Unit)? = null
@@ -66,7 +67,7 @@ class SpeechManager(private val context: Context) {
         if (recognitionInitialized) return
         recognitionInitialized = true
         scope.launch {
-            val sttReady = stt.loadModel(SpeechLanguage.FR)
+            val sttReady = stt.loadModel(currentLanguage)
             wakeWord.onWakeWord { onWakeWordDetected() }
             wakeWordEnabled = wakeWord.start()
             val readyMessage = when {
@@ -88,7 +89,7 @@ class SpeechManager(private val context: Context) {
         if (state != SpeechState.IDLE) return
 
         wakeWord.pause()
-        val prompt = if (currentLanguage == SpeechLanguage.FR) "Oui ?" else "Yes?"
+        val prompt = "Oui ?"
         if (tts.isAvailable()) {
             setState(SpeechState.SPEAKING)
             tts.speak(prompt, TTSOptions(onDone = { startCommandRecognition() }))
@@ -105,10 +106,7 @@ class SpeechManager(private val context: Context) {
                 },
                 onError = { error ->
                     PrivacyLog.e(TAG, "Erreur STT: $error")
-                    val msg = if (currentLanguage == SpeechLanguage.FR)
-                        "Je n'ai pas compris. Appuyez sur Parler pour réessayer."
-                    else "I didn't understand. Tap Speak to try again."
-                    speak(msg)
+                    speak("Je n'ai pas compris. Appuyez sur Parler pour réessayer.")
                 }
             )
     }
@@ -117,20 +115,6 @@ class SpeechManager(private val context: Context) {
     private fun handleTranscript(result: STTResult) {
         setState(SpeechState.PROCESSING)
         stt.stopListening()
-
-        val text = result.text.lowercase()
-
-        // Détection commande switch de langue
-        if (text.contains("switch to english") || text.contains("parle anglais")) {
-            switchLanguage(SpeechLanguage.EN)
-            setState(SpeechState.IDLE)
-            return
-        }
-        if (text.contains("parle français") || text.contains("switch to french")) {
-            switchLanguage(SpeechLanguage.FR)
-            setState(SpeechState.IDLE)
-            return
-        }
 
         // Envoyer la commande au Brain
         onCommandDetected?.invoke(result.text, currentLanguage)
@@ -155,12 +139,14 @@ class SpeechManager(private val context: Context) {
 
     // ─── CHANGER DE LANGUE ────────────────────────────
     fun switchLanguage(language: SpeechLanguage) {
+        val effectiveLanguage = OfflineLanguagePolicy.normalize(language)
+        if (language != effectiveLanguage) {
+            PrivacyLog.d(TAG, "Changement de langue refuse par la politique hors ligne")
+        }
         scope.launch {
-            stt.switchLanguage(language)
-            tts.setLanguage(language)
-            currentLanguage = language
-            tts.announceLanguageSwitch(language)
-            PrivacyLog.d(TAG, "Langue globale -> $language")
+            stt.switchLanguage(effectiveLanguage)
+            tts.setLanguage(effectiveLanguage)
+            PrivacyLog.d(TAG, "Langue globale -> $effectiveLanguage")
         }
     }
 

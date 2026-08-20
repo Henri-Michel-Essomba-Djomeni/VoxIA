@@ -30,7 +30,7 @@
     <string name="accessibility_transcript_value">Transcription reconnue : %1$s</string>
     <string name="accessibility_response_empty">Réponse VOXIA : aucune réponse pour le moment.</string>
     <string name="accessibility_response_value">Réponse VOXIA : %1$s</string>
-    <string name="accessibility_language_current_fr">Langue actuelle : français.</string>
+    <string name="accessibility_language_current_fr">Version hors ligne en français. Le changement de langue n’est pas encore disponible.</string>
     <string name="permission_audio_required">Le microphone n’est pas autorisé. Les commandes vocales sont indisponibles, mais les boutons et la caméra restent utilisables.</string>
     <string name="permission_camera_denied">La caméra est nécessaire pour cette fonction.</string>
     <string name="permission_contacts_denied">L\'accès aux contacts a été refusé.</string>

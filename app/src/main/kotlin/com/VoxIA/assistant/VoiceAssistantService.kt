@@ -28,6 +28,7 @@ import com.voxia.brain.IntentMapper
 import com.voxia.brain.Language
 import com.voxia.brain.VoxiaContext
 import com.voxia.brain.VoxiaResponses
+import com.voxia.language.OfflineLanguagePolicy
 import com.voxia.speech.SpeechManager
 import com.voxia.speech.stt.STTResult
 import com.voxia.speech.stt.SpeechLanguage
@@ -73,7 +74,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private var lifecycleOwner: LifecycleOwner? = null
     private var previewView: androidx.camera.view.PreviewView? = null
 
-    private var currentLanguage = Language.FRENCH
+    private val currentLanguage = OfflineLanguagePolicy.brainLanguage
     private var lastResponse: Pair<String, String> = Pair("", "")
     private var lastTranscript: String = ""
     private var pendingPermissionAction: (() -> Unit)? = null
@@ -92,11 +93,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     private var lastReadingText: String = ""
 
     private val currentSpeechLanguage: SpeechLanguage
-        get() = when (currentLanguage) {
-            Language.FRENCH -> SpeechLanguage.FR
-            Language.ENGLISH -> SpeechLanguage.EN
-            Language.UNKNOWN -> SpeechLanguage.FR
-        }
+        get() = OfflineLanguagePolicy.speechLanguage
 
     override fun onCreate() {
         super.onCreate()
@@ -114,7 +111,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
                 publishEvent(state = state.name)
             },
             onTranscript = { result -> handleTranscript(result) },
-            onCommandDetected = { text, lang -> handleCommand(text, lang) }
+            onCommandDetected = { text, _ -> handleCommand(text) }
         )
 
         MemoryManager.load("app")
@@ -183,12 +180,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         publishEvent(transcript = result.text)
     }
 
-    private fun handleCommand(text: String, language: SpeechLanguage) {
-        val lang = when (language) {
-            SpeechLanguage.FR -> Language.FRENCH
-            SpeechLanguage.EN -> Language.ENGLISH
-        }
-
+    private fun handleCommand(text: String) {
         val confirmationResolution = confirmationTransactions.resolve(text)
         when (confirmationResolution) {
             is ConfirmationResolution.Confirmed -> Unit
@@ -241,7 +233,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         }
         if (contactNameResolution !is ContactNameResolution.None) return
 
-        val result = intentClassifier.classify(text, lang)
+        val result = intentClassifier.classify(text, OfflineLanguagePolicy.brainLanguage)
         PrivacyLog.d(
             TAG,
             "Commande classée: intent=${result.intent}, language=${result.language}, " +
@@ -382,14 +374,10 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
     }
 
     override fun switchLanguage(language: Language) {
-        currentLanguage = language
-        speechManager.switchLanguage(
-            when (language) {
-                Language.FRENCH -> SpeechLanguage.FR
-                Language.ENGLISH -> SpeechLanguage.EN
-                Language.UNKNOWN -> SpeechLanguage.FR
-            }
-        )
+        speechManager.switchLanguage(OfflineLanguagePolicy.speechLanguage)
+        if (!OfflineLanguagePolicy.isSupported(language)) {
+            PrivacyLog.d(TAG, "Changement de langue refuse par la politique hors ligne")
+        }
     }
 
     override fun loadVisionModule() {

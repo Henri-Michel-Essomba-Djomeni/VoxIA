@@ -46,8 +46,7 @@ object IntentMapper {
             }
 
             Intent.SWITCH_TO_ENGLISH -> {
-                context.switchLanguage(Language.ENGLISH)
-                val response = VoxiaResponses.switchedToEnglish()
+                val response = VoxiaResponses.englishUnavailableOffline()
                 context.speak(fr = response.first, en = response.second)
             }
 

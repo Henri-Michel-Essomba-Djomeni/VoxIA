@@ -9,6 +9,7 @@ import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import com.voxia.language.OfflineLanguagePolicy
 import com.voxia.utils.PrivacyLog
 import java.util.Locale
 
@@ -64,7 +65,7 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
     suspend fun loadModels(): Boolean = loadModel(currentLanguage)
 
     suspend fun loadModel(language: SpeechLanguage): Boolean {
-        currentLanguage = language
+        currentLanguage = OfflineLanguagePolicy.normalize(language)
         return SpeechRecognizer.isRecognitionAvailable(context).also { available ->
             if (!available) {
                 PrivacyLog.w(TAG, "SpeechRecognizer Android indisponible sur cet appareil")
@@ -82,16 +83,17 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
             return
         }
 
+        val effectiveLanguage = OfflineLanguagePolicy.normalize(language)
         mainHandler.post {
             if (!SpeechRecognizer.isRecognitionAvailable(context)) {
                 onError("Reconnaissance vocale Android indisponible")
                 return@post
             }
 
-            currentLanguage = language
+            currentLanguage = effectiveLanguage
             fallbackAttempted = false
             launchRecognizer(
-                language = language,
+                language = effectiveLanguage,
                 useOnDevice = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                     SpeechRecognizer.isOnDeviceRecognitionAvailable(context),
                 preferOffline = true,
@@ -196,8 +198,8 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
 
     suspend fun switchLanguage(language: SpeechLanguage) {
         if (isListening) stopListening()
-        currentLanguage = language
-        PrivacyLog.d(TAG, "Langue changée vers $language")
+        currentLanguage = OfflineLanguagePolicy.normalize(language)
+        PrivacyLog.d(TAG, "Langue STT -> $currentLanguage")
     }
 
     fun release() {

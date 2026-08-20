@@ -3,6 +3,7 @@ package com.voxia.speech.tts
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import com.voxia.language.OfflineLanguagePolicy
 import com.voxia.speech.stt.SpeechLanguage
 import com.voxia.utils.PrivacyLog
 import java.util.Locale
@@ -139,27 +140,30 @@ class TTSService(private val context: Context) {
     }
 
     fun setLanguage(language: SpeechLanguage) {
-        val locale = when (language) {
+        val effectiveLanguage = OfflineLanguagePolicy.normalize(language)
+        val locale = when (effectiveLanguage) {
             SpeechLanguage.FR -> Locale.FRENCH
             SpeechLanguage.EN -> Locale.ENGLISH
         }
         val result = tts?.setLanguage(locale)
         if (result == TextToSpeech.LANG_MISSING_DATA ||
             result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            PrivacyLog.e(TAG, "Langue $language non supportée")
+            PrivacyLog.e(TAG, "Langue $effectiveLanguage non supportée")
         } else {
-            currentLanguage = language
-            PrivacyLog.d(TAG, "Langue TTS -> $language")
+            currentLanguage = effectiveLanguage
+            PrivacyLog.d(TAG, "Langue TTS -> $effectiveLanguage")
         }
     }
 
     fun announceLanguageSwitch(language: SpeechLanguage) {
-        val message = when (language) {
-            SpeechLanguage.FR -> "Langue changée en français"
-            SpeechLanguage.EN -> "Language switched to English"
-        }
         setLanguage(language)
-        speak(message)
+        speak(
+            if (language == SpeechLanguage.FR) {
+                "VOXIA est déjà en français."
+            } else {
+                "La version hors ligne fonctionne actuellement uniquement en français."
+            }
+        )
     }
 
     fun stop() {
