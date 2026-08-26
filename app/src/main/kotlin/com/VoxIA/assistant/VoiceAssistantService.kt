@@ -57,6 +57,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         const val EXTRA_STATE = "state"
         const val EXTRA_TRANSCRIPT = "transcript"
         const val EXTRA_RESPONSE = "response"
+        const val EXTRA_RESPONSE_SPOKEN = "response_spoken"
         const val EXTRA_PERMISSION = "permission"
     }
 
@@ -154,7 +155,7 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         releaseActiveModules()
         speechManager.cancelListening()
         val message = if (currentLanguage == Language.FRENCH) "Action annulée." else "Action cancelled."
-        publishEvent(state = "IDLE", response = message)
+        publishEvent(state = "IDLE", response = message, responseSpoken = false)
     }
 
     fun retryPendingPermissionAction() {
@@ -249,20 +250,29 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
             Language.ENGLISH -> en
             Language.UNKNOWN -> fr
         }
-        publishEvent(response = text)
-        speechManager.speak(text)
+        publishEvent(response = text, responseSpoken = true)
+        speechManager.speak(
+            text,
+            TTSOptions(
+                onError = { publishEvent(response = text, responseSpoken = false) }
+            )
+        )
     }
 
     private fun publishEvent(
         state: String? = null,
         transcript: String? = null,
         response: String? = null,
+        responseSpoken: Boolean = false,
         permission: String? = null
     ) {
         sendBroadcast(Intent(ACTION_EVENT).setPackage(packageName).apply {
             state?.let { putExtra(EXTRA_STATE, it) }
             transcript?.let { putExtra(EXTRA_TRANSCRIPT, it) }
-            response?.let { putExtra(EXTRA_RESPONSE, it) }
+            response?.let {
+                putExtra(EXTRA_RESPONSE, it)
+                putExtra(EXTRA_RESPONSE_SPOKEN, responseSpoken)
+            }
             permission?.let { putExtra(EXTRA_PERMISSION, it) }
         })
     }
@@ -921,10 +931,18 @@ class VoiceAssistantService : LifecycleService(), VoxiaContext {
         releaseActiveModules()
         speechManager.cancelListening()
         val message = if (currentLanguage == Language.FRENCH) "D'accord, j'arrête." else "Okay, stopping."
-        publishEvent(response = message)
-        speechManager.speak(message, TTSOptions(onDone = {
-            Handler(Looper.getMainLooper()).post { stopSelf() }
-        }))
+        publishEvent(response = message, responseSpoken = true)
+        val stopService: () -> Unit = { Handler(Looper.getMainLooper()).post { stopSelf() } }
+        speechManager.speak(
+            message,
+            TTSOptions(
+                onDone = stopService,
+                onError = {
+                    publishEvent(response = message, responseSpoken = false)
+                    stopService()
+                }
+            )
+        )
     }
 
     fun getCurrentLanguage(): Language = currentLanguage

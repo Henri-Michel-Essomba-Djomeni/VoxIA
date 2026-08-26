@@ -32,6 +32,7 @@ class SpeechManager(private val context: Context) {
     private val wakeWord = WakeWordService(context)
     private val scope = CoroutineScope(Dispatchers.IO)
 
+    @Volatile
     private var state = SpeechState.IDLE
     private val currentLanguage = OfflineLanguagePolicy.speechLanguage
     private var onStateChange: ((SpeechState) -> Unit)? = null
@@ -59,6 +60,12 @@ class SpeechManager(private val context: Context) {
             onError = {
                 PrivacyLog.e(TAG, "Erreur init TTS")
                 initializeRecognition(onReady)
+            },
+            onInterrupted = {
+                if (state == SpeechState.SPEAKING) {
+                    setState(SpeechState.IDLE)
+                    resumeWakeWordIfAvailable()
+                }
             }
         )
     }
@@ -75,7 +82,7 @@ class SpeechManager(private val context: Context) {
                 sttReady -> "VOXIA est prêt. Appuyez sur le bouton Parler."
                 else -> "La reconnaissance vocale n'est pas disponible. Utilisez les boutons de l'écran."
             }
-            if (tts.isAvailable()) tts.speak(readyMessage)
+            if (tts.isAvailable()) speak(readyMessage)
             onReady()
         }
     }
@@ -92,8 +99,21 @@ class SpeechManager(private val context: Context) {
         val prompt = "Oui ?"
         if (tts.isAvailable()) {
             setState(SpeechState.SPEAKING)
-            tts.speak(prompt, TTSOptions(onDone = { startCommandRecognition() }))
+            tts.speak(
+                prompt,
+                TTSOptions(
+                    onDone = { handlePromptTerminal(succeeded = true) },
+                    onError = { handlePromptTerminal(succeeded = false) }
+                )
+            )
         } else startCommandRecognition()
+    }
+
+    private fun handlePromptTerminal(succeeded: Boolean) {
+        when (SpeechPromptPolicy.terminalAction(succeeded)) {
+            PromptTerminalAction.START_LISTENING -> startCommandRecognition()
+            PromptTerminalAction.RETURN_TO_IDLE -> setState(SpeechState.IDLE)
+        }
     }
 
     private fun startCommandRecognition() {
@@ -131,10 +151,20 @@ class SpeechManager(private val context: Context) {
         tts.speak(text, options.copy(
             onDone = {
                 options.onDone?.invoke()
-                setState(SpeechState.IDLE)
-                resumeWakeWordIfAvailable()
+                finishSpeechIfTerminal()
+            },
+            onError = {
+                finishSpeechIfTerminal()
+                options.onError?.invoke()
             }
         ))
+    }
+
+    private fun finishSpeechIfTerminal() {
+        if (SpeechStatePolicy.shouldReturnToIdle(state, tts.hasPendingSpeech())) {
+            setState(SpeechState.IDLE)
+            resumeWakeWordIfAvailable()
+        }
     }
 
     // ─── CHANGER DE LANGUE ────────────────────────────
@@ -155,7 +185,7 @@ class SpeechManager(private val context: Context) {
         val oldState = state
         state = newState
 
-        if (newState == SpeechState.LISTENING && oldState == SpeechState.IDLE) {
+        if (newState != SpeechState.IDLE && oldState == SpeechState.IDLE) {
             wakeWord.pause()
         } else if (newState == SpeechState.IDLE && oldState != SpeechState.IDLE) {
             wakeWord.resume()

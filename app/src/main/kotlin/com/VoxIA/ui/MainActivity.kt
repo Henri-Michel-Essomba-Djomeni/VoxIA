@@ -104,9 +104,17 @@ class MainActivity : AppCompatActivity() {
     private val eventReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             intent ?: return
-            intent.getStringExtra(VoiceAssistantService.EXTRA_STATE)?.let { stateText.text = localizedState(it) }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_STATE)?.let { updateState(it) }
             intent.getStringExtra(VoiceAssistantService.EXTRA_TRANSCRIPT)?.let { updateTranscript(it) }
-            intent.getStringExtra(VoiceAssistantService.EXTRA_RESPONSE)?.let { updateResponse(it) }
+            intent.getStringExtra(VoiceAssistantService.EXTRA_RESPONSE)?.let {
+                val origin = AccessibilityAnnouncementPolicy.originForAssistantEvent(
+                    wasSpoken = intent.getBooleanExtra(
+                        VoiceAssistantService.EXTRA_RESPONSE_SPOKEN,
+                        false
+                    )
+                )
+                updateResponse(it, origin)
+            }
             intent.getStringExtra(VoiceAssistantService.EXTRA_PERMISSION)?.let { permission ->
                 when (permission) {
                     Manifest.permission.CAMERA -> showPermissionRationale(
@@ -328,6 +336,14 @@ class MainActivity : AppCompatActivity() {
         else -> getString(R.string.state_idle)
     }
 
+    private fun updateState(state: String) {
+        val localizedState = localizedState(state)
+        stateText.text = localizedState
+        if (AccessibilityAnnouncementPolicy.shouldAnnounceState(state == "SPEAKING")) {
+            stateText.announceForAccessibility(localizedState)
+        }
+    }
+
     private fun updateTranscript(text: String) {
         transcriptText.text = text
         transcriptText.contentDescription = if (text.isBlank()) {
@@ -337,12 +353,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateResponse(text: String) {
+    private fun updateResponse(text: String, origin: ResponseOrigin = ResponseOrigin.LOCAL_UI) {
         responseText.text = text
-        responseText.contentDescription = if (text.isBlank()) {
+        val accessibleText = if (text.isBlank()) {
             getString(R.string.accessibility_response_empty)
         } else {
             getString(R.string.accessibility_response_value, text)
+        }
+        responseText.contentDescription = accessibleText
+        if (AccessibilityAnnouncementPolicy.shouldAnnounce(origin)) {
+            responseText.announceForAccessibility(accessibleText)
         }
     }
 
