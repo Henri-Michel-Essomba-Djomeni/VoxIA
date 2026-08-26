@@ -50,6 +50,59 @@ internal object STTResultDispatcher {
     }
 }
 
+/**
+ * Owns the terminal state of one Android speech-recognition session.
+ *
+ * SpeechRecognizer may emit callbacks after stopListening(), after a fallback
+ * recognizer replaces the current one, or even after a final result. Keeping
+ * this policy independent from Android makes those races explicit and testable.
+ */
+internal class STTSessionGate {
+    private var activeSessionId = 0L
+    private var terminalDelivered = true
+    private var cancelled = true
+
+    @Synchronized
+    fun begin(): Long {
+        activeSessionId += 1
+        terminalDelivered = false
+        cancelled = false
+        return activeSessionId
+    }
+
+    @Synchronized
+    fun continueWithFallback(sessionId: Long): Long? {
+        if (!isActiveUnsafe(sessionId)) return null
+
+        activeSessionId += 1
+        terminalDelivered = false
+        cancelled = false
+        return activeSessionId
+    }
+
+    @Synchronized
+    fun acceptTerminal(sessionId: Long): Boolean {
+        if (!isActiveUnsafe(sessionId)) return false
+
+        terminalDelivered = true
+        return true
+    }
+
+    @Synchronized
+    fun isActive(sessionId: Long): Boolean = isActiveUnsafe(sessionId)
+
+    @Synchronized
+    fun hasActiveSession(): Boolean = !cancelled && !terminalDelivered
+
+    @Synchronized
+    fun cancel() {
+        cancelled = true
+    }
+
+    private fun isActiveUnsafe(sessionId: Long): Boolean =
+        sessionId == activeSessionId && !cancelled && !terminalDelivered
+}
+
 class AndroidSpeechRecognizerSTTService(private val context: Context) {
 
     companion object {
@@ -57,8 +110,10 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
     }
 
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val sessionGate = STTSessionGate()
     private var recognizer: SpeechRecognizer? = null
     private var currentLanguage = SpeechLanguage.FR
+    @Volatile
     private var isListening = false
     private var fallbackAttempted = false
 
@@ -78,13 +133,12 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
         onResult: (STTResult) -> Unit,
         onError: (String) -> Unit
     ) {
-        if (isListening) {
-            PrivacyLog.w(TAG, "Déjà en écoute")
-            return
-        }
-
         val effectiveLanguage = OfflineLanguagePolicy.normalize(language)
         mainHandler.post {
+            if (sessionGate.hasActiveSession()) {
+                PrivacyLog.w(TAG, "Déjà en écoute")
+                return@post
+            }
             if (!SpeechRecognizer.isRecognitionAvailable(context)) {
                 onError("Reconnaissance vocale Android indisponible")
                 return@post
@@ -92,7 +146,9 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
 
             currentLanguage = effectiveLanguage
             fallbackAttempted = false
+            val sessionId = sessionGate.begin()
             launchRecognizer(
+                sessionId = sessionId,
                 language = effectiveLanguage,
                 useOnDevice = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
                     SpeechRecognizer.isOnDeviceRecognitionAvailable(context),
@@ -104,6 +160,7 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
     }
 
     private fun launchRecognizer(
+        sessionId: Long,
         language: SpeechLanguage,
         useOnDevice: Boolean,
         preferOffline: Boolean,
@@ -117,27 +174,32 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
             SpeechRecognizer.createSpeechRecognizer(context)
         }
         recognizer = recognizer?.apply {
-            setRecognitionListener(object : RecognitionListener {
+            setRecognitionListener(
+                object : RecognitionListener {
                     override fun onReadyForSpeech(params: Bundle?) {
-                        isListening = true
+                        if (sessionGate.isActive(sessionId)) isListening = true
                     }
 
                     override fun onBeginningOfSpeech() = Unit
                     override fun onRmsChanged(rmsdB: Float) = Unit
                     override fun onBufferReceived(buffer: ByteArray?) = Unit
                     override fun onEndOfSpeech() {
-                        isListening = false
+                        if (sessionGate.isActive(sessionId)) isListening = false
                     }
 
                     override fun onError(error: Int) {
-                        isListening = false
                         // 12 = langue non prise en charge, 13 = pack de langue indisponible.
                         // Certains appareils annoncent le moteur local avant que le pack FR soit installé.
                         if ((error == 12 || error == 13) && !fallbackAttempted) {
+                            val fallbackSessionId = sessionGate.continueWithFallback(sessionId)
+                                ?: return
                             fallbackAttempted = true
+                            isListening = false
                             PrivacyLog.w(TAG, "Pack vocal local indisponible ($error), repli vers le moteur système")
                             mainHandler.postDelayed({
+                                if (!sessionGate.isActive(fallbackSessionId)) return@postDelayed
                                 launchRecognizer(
+                                    sessionId = fallbackSessionId,
                                     language = language,
                                     useOnDevice = false,
                                     preferOffline = false,
@@ -147,10 +209,19 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
                             }, 200L)
                             return
                         }
+                        if (!sessionGate.acceptTerminal(sessionId)) {
+                            PrivacyLog.d(TAG, "Callback STT terminal tardif ignoré (erreur=$error)")
+                            return
+                        }
+                        isListening = false
                         onError(humanReadableError(error))
                     }
 
                     override fun onResults(results: Bundle?) {
+                        if (!sessionGate.acceptTerminal(sessionId)) {
+                            PrivacyLog.d(TAG, "Résultat STT tardif ignoré")
+                            return
+                        }
                         isListening = false
                         val matches = results
                             ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
@@ -167,6 +238,7 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
                     }
 
                     override fun onPartialResults(partialResults: Bundle?) {
+                        if (!sessionGate.isActive(sessionId)) return
                         val matches = partialResults
                             ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                             .orEmpty()
@@ -177,7 +249,8 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
                     }
 
                     override fun onEvent(eventType: Int, params: Bundle?) = Unit
-            })
+                }
+            )
         }
 
         recognizer?.startListening(buildRecognizerIntent(language, preferOffline))
@@ -189,10 +262,15 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
     }
 
     fun stopListening() {
+        // Invalidate synchronously so no queued Android callback can win the race.
+        sessionGate.cancel()
+        isListening = false
         mainHandler.post {
-            recognizer?.stopListening()
+            // Also cancel here in case startListening() was already queued first.
+            sessionGate.cancel()
+            recognizer?.cancel()
             isListening = false
-            PrivacyLog.d(TAG, "Écoute arrêtée")
+            PrivacyLog.d(TAG, "Écoute annulée")
         }
     }
 
@@ -203,7 +281,11 @@ class AndroidSpeechRecognizerSTTService(private val context: Context) {
     }
 
     fun release() {
+        sessionGate.cancel()
+        isListening = false
         mainHandler.post {
+            // Covers a start request that was queued before release().
+            sessionGate.cancel()
             recognizer?.destroy()
             recognizer = null
             isListening = false

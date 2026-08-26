@@ -134,7 +134,6 @@ class SpeechManager(private val context: Context) {
     // ─── TRAITER LA TRANSCRIPTION ─────────────────────
     private fun handleTranscript(result: STTResult) {
         setState(SpeechState.PROCESSING)
-        stt.stopListening()
 
         // Envoyer la commande au Brain
         onCommandDetected?.invoke(result.text, currentLanguage)
