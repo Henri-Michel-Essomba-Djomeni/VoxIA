@@ -126,7 +126,7 @@ Une release terrain exige une checklist entièrement renseignée : aucun cas cri
 
 ## Sortie attendue
 
-Après test réel, produire un résumé anonymisé dans un fichier de suivi ou dans `CODEX_EVOLUTION_VOXIA.md` :
+Après test réel, conserver les preuves brutes locales sous `evaluation/field/reports/`. Produire ensuite un résumé anonymisé et validé sous `evaluation/field/summaries/`, puis le lier depuis le changelog et les registres :
 
 - appareil et OS ;
 - build testée et commit ;

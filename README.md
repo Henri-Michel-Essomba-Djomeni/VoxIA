@@ -4,15 +4,15 @@ VOXIA est un assistant Android vocal et visuel, conçu en priorité pour aider u
 
 Le dépôt contient aujourd'hui un **prototype interne**, pas une version publique validée. L'objectif actif est de livrer une première version **hors ligne, sûre, accessible et vérifiée sur téléphone réel** avant d'ajouter des fonctions cloud.
 
-## État au 20 août 2026
+## État au 26 août 2026
 
 - Source : `0.1.1-alpha-internal`, Android 10/API 29 minimum, `targetSdk 34`.
 - Voix : Android `SpeechRecognizer` et `TextToSpeech` ; aucun modèle Vosk ou Whisper embarqué.
 - Vision : OCR latin, étiquetage générique et codes-barres ML Kit ; aucun modèle YOLO VOXIA embarqué.
 - Intentions : règles Kotlin locales ; aucun classifieur TFLite livré.
 - Produit : pipeline code-barres présent, mais catalogue local vide hors en-tête.
-- Vérification locale : 62 tests unitaires distincts réussis sur debug et release, lint sans erreur, APK debug et release construits.
-- Étape 0 en cours : actions caméra sans microphone, terminaisons STT/TTS/OCR, confirmations/contact expirants et politique FR-only cohérente sont protégés par des tests JVM.
+- Vérification locale : 76 tests unitaires distincts réussis sur debug et release, lint sans erreur et APK debug construit depuis la source courante.
+- Étape 0 en cours : P0-002, P0-004, P0-005 et P0-006 sont implémentés côté code ; P0-003 reste en validation avec des timeouts globaux incomplets. Les preuves appareil applicables restent obligatoires.
 - Validation terrain : 0 scénario sur 30 exécuté ; TalkBack, caméra, microphone, permissions, mode avion et performances restent à valider sur téléphone réel.
 - Décision de diffusion : **NO-GO public** jusqu'au franchissement des gates du plan directeur.
 

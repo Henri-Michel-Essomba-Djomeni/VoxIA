@@ -183,3 +183,12 @@
 - Décision : l'APK `VOXIA-1.0.0-release.apk` reste une baseline historique. La version offline doit produire un APK ARM64 signé/hashé pour le terrain et un AAB signé pour la distribution.
 - Motivation : éviter la confusion entre numéro marketing historique, source actuelle et artefact CI potentiellement non signé.
 - Conséquence : chaque manifest de release indique version, versionCode, commit, SHA-256, signature, taille, appareils et résultats de gate.
+
+## ADR-0022 — Donner un propriétaire unique aux annonces vocales
+
+- Date : 2026-08-26
+- Statut : accepté (implémentation P0-006, validation appareil requise)
+- Décision : VOXIA TTS est l'unique propriétaire des réponses de l'assistant. TalkBack conserve les contrôles, les états utiles hors parole et tout retour UI qui n'a pas pu être vocalisé. Le TTS utilise un focus audio transitoire, sépare succès et erreur, et invalide les callbacks d'une utterance arrêtée.
+- Motivation : une live region et le TTS annonçaient la même réponse, tandis qu'une erreur TTS pouvait poursuivre une action comme si le prompt avait été entendu. Ces comportements sont incompatibles avec une interaction sûre pour une personne non-voyante.
+- Conséquence : les réponses miroir restent lisibles et focalisables sans être répétées par TalkBack. En cas d'échec TTS, la réponse est republiée comme retour accessible non vocalisé ; le prompt « Oui ? » revient à l'état prêt sans ouvrir le microphone.
+- Limite assumée : les politiques et transitions sont couvertes en JVM, pas l'intégration Android/audio focus. TalkBack, appels, notifications et musique doivent être exercés sur téléphone réel, en commençant par FIELD-029 puis en couvrant les 30 scénarios exigés par Gate 1 avant fermeture de P0-006/R-019.

@@ -1,8 +1,8 @@
 # VOXIA — fonctions réelles
 
 **Statut :** inventaire factuel autoritaire
-**Dernière vérification :** 20 août 2026
-**Commit applicatif de référence :** `84d2389`
+**Dernière vérification :** 26 août 2026
+**Commit applicatif de référence :** `f4777f0`
 **Version source :** `0.1.1-alpha-internal`
 
 Statuts :
@@ -18,7 +18,7 @@ Statuts :
 | Domaine | Fonction | Statut | Offline | Preuve actuelle | Limite principale |
 |---|---|---|---|---|---|
 | Voix | Écoute ponctuelle FR | Partiel | Conditionnel | politique FR-only + Android `SpeechRecognizer` + tests | fournisseur système possiblement réseau ; aucun test appareil |
-| Voix | Synthèse vocale FR | Partiel | Conditionnel | politique FR-only + Android `TextToSpeech` + tests | dépend du moteur/pack ; collision TalkBack non résolue |
+| Voix | Synthèse vocale FR | Partiel | Conditionnel | politique FR-only + focus audio + tests de politiques | dépend du moteur/pack ; validation appareil requise |
 | Voix | Anglais | Absent V0 | Non | demande explicitement refusée sans mutation | localisation complète reportée après V0 offline |
 | Voix | Wake word | Absent | Non | stub retournant toujours faux | aucun modèle livré |
 | Intentions | Classification locale | Partiel | Oui | règles Kotlin + tests unitaires | mots isolés trop permissifs ; harnais Python différent du moteur livré |
@@ -39,7 +39,7 @@ Statuts :
 | Export | Copier/partager OCR | Partiel | Oui | avertissement + confirmation/chooser | presse-papiers et application cible hors contrôle |
 | Permissions | Explication avant demande | Partiel | Oui | rationales + file d'actions testée | parcours refus/retour non instrumentés |
 | Accessibilité | Contraste et cibles | Fonctionnel statique | Oui | contrastes explicites AAA, boutons 56–72 dp | thème/focus runtime non mesurés |
-| Accessibilité | TalkBack et statuts | Partiel | Oui | libellés et live regions présents | double parole probable, 0 test réel |
+| Accessibilité | TalkBack et statuts | Partiel | Oui | propriétaire d'annonce explicite + fallback TTS + tests | absence de double parole non encore prouvée sur téléphone réel |
 | Accessibilité | Police 200 % | Partiel | Oui | tailles `sp`, hauteurs adaptatives | grille à trois colonnes non testée |
 | Accessibilité | Haptique | Absent | Oui | permission déclarée seulement | aucune utilisation dans le code |
 
@@ -60,7 +60,7 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 2. Les sorties terminales STT vide, TTS en erreur et OCR à l'initialisation sont corrigées en JVM ; les timeouts globaux restent incomplets.
 3. La politique FR-only élimine la divergence connue, mais le comportement moteur doit encore être validé sur appareil.
 4. Confirmations et contacts disposent maintenant de jetons, délais et désambiguïsation, mais le parcours doit être validé sur appareil avec carnet réel.
-5. TalkBack et le TTS VOXIA peuvent annoncer simultanément la même réponse.
+5. La duplication connue TalkBack/TTS est supprimée dans le code ; le scénario FIELD-029 et les interruptions audio restent à valider sur téléphone réel.
 6. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
 7. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
 
@@ -68,11 +68,11 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 62 cas distincts, 124 exécutions, 0 échec, 0 ignoré |
+| `gradlew test` | succès, 76 cas distincts, 152 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK 118 511 199 octets |
-| `gradlew assembleRelease` | succès, APK signé v2 de 103 394 179 octets, SHA-256 consigné dans `CHANGELOG.md` |
-| `gradlew bundleRelease` | succès local, AAB 47 558 559 octets |
+| `gradlew assembleDebug` | succès, APK 118 527 551 octets |
+| `gradlew assembleRelease` | lot précédent uniquement : APK signé v2 de 103 394 179 octets, non reconstruit depuis `f4777f0` |
+| `gradlew bundleRelease` | lot précédent uniquement : AAB 47 558 559 octets, non reconstruit depuis `f4777f0` |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |
 | Évaluateurs Intent/STT/OCR | exécutables, mais seulement sur un exemple factice chacun |
