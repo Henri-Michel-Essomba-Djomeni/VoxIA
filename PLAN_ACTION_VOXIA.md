@@ -217,7 +217,7 @@ Les seuils peuvent évoluer après une baseline réelle, mais uniquement par dé
 
 ## 8. Backlog actif
 
-Le backlog actif est limité à l'étape en cours. Au 20 août 2026, seule **l'étape 0** est autorisée. Toute fonctionnalité non liée à sa gate reste en attente.
+Le backlog actif est limité à l'étape en cours. Au 27 août 2026, seule **l'étape 0** est autorisée. Toute fonctionnalité non liée à sa gate reste en attente.
 
 | ID | Résultat attendu | Owner | Statut | Preuve de sortie |
 |---|---|---|---|---|
@@ -226,7 +226,7 @@ Le backlog actif est limité à l'étape en cours. Au 20 août 2026, seule **l'�
 | P0-003 | États STT/TTS/OCR toujours terminaux | CTO | En validation | `ff300c1`, 9 tests ajoutés au lot ; timeouts globaux restant à traiter |
 | P0-004 | Confirmations expirantes et contacts désambiguïsés | CTO | Implémenté, appareil requis | `6047ea1`, 14 tests transaction/expiration/choix |
 | P0-005 | Langue unique et cohérente | CTO | Implémenté, appareil requis | `84d2389`, politique FR-only + 4 tests |
-| P0-006 | TalkBack/TTS et audio focus coordonnés | Accessibilité+CTO | Implémenté, appareil requis | `f4777f0`, 14 tests ; FIELD-029 d'abord, puis 0 double annonce sur les 30 scénarios de Gate 1 |
+| P0-006 | TalkBack/TTS et audio focus coordonnés | Accessibilité+CTO | Implémenté, appareil requis | `7689eeb`, suite de 91 tests et FIELD-029 passé sur Xiaomi Android 15 ; interruptions externes et 30 scénarios Gate 1 restants |
 | P0-007 | Contrat offline prouvé en mode avion | QA | À faire | rapport cold/warm + moteurs |
 | P0-008 | CVE, API 36, CI, signature, licences et modèles sécurisés | CTO/Sécurité | À faire | scan, SBOM, build propre |
 | P0-009 | Tests instrumentés et matrice appareil | QA | À faire | androidTest + checklist 30/30 |
@@ -248,4 +248,4 @@ Une information présente dans plusieurs documents doit être détaillée dans u
 
 ## 10. Prochaine action
 
-Valider P0-006 sur téléphone : exécuter d'abord FIELD-029 avec TalkBack, puis provoquer les interruptions appel/notification/musique et poursuivre jusqu'au critère Gate 1 de 0 double annonce sur 30 scénarios. Archiver les rapports sous `evaluation/field/reports/` et ne démarrer P0-007 qu'après décision sur les résultats ou correction des écarts.
+Poursuivre P0-006 sur téléphone après FIELD-029 : provoquer les interruptions appel/notification/musique, corriger la sémantique d'état des traitements asynchrones longs, puis continuer jusqu'au critère Gate 1 de 0 double annonce sur 30 scénarios. Archiver les rapports sous `evaluation/field/reports/` et ne démarrer P0-007 qu'après décision sur les résultats ou correction des écarts.

@@ -1,7 +1,7 @@
 # VOXIA — registre des risques
 
 **Propriétaires :** COO + CTO
-**Dernière revue :** 26 août 2026
+**Dernière revue :** 27 août 2026
 **Cadence :** hebdomadaire et à chaque gate
 **Score :** probabilité × impact, de 1 à 25
 
@@ -27,7 +27,7 @@ Un risque n'est « réduit » que si une preuve est liée. Un score de 15 à 25 
 | R-016 | États STT/TTS/OCR bloqués | 20 | CTO | 0 | terminaisons ciblées testées dans `ff300c1` ; timeouts restants | En réduction P0 |
 | R-017 | Langues UI/service/STT/TTS divergentes | 12 | CTO | 0 | politique FR-only testée dans `84d2389` ; appareil requis | En validation P0 |
 | R-018 | Confirmation sans expiration/contact ambigu | 20 | CTO | 0 | jetons, délais et choix testés dans `6047ea1` ; appareil requis | En validation P0 |
-| R-019 | Double parole TalkBack/TTS | 20 | Accessibilité | 1 | propriétaire unique et politiques de focus/fallback couverts en JVM dans `f4777f0` ; intégration Android, FIELD-029 et 30 scénarios appareil restants | En validation P0 |
+| R-019 | Double parole TalkBack/TTS | 20 | Accessibilité | 1 | propriétaire unique, 91 tests et FIELD-029 passés dans `7689eeb` sur Xiaomi Android 15 ; appels, notifications, musique et autres appareils restent à valider | En validation P0 |
 | R-020 | CVE transitives OkHttp/Okio | 16 | CTO/Sécurité | 0 | contraintes sûres + scan graphe final | Ouvert P0 |
 | R-021 | AAB CI potentiellement non signé | 12 | CTO | 0/4 | Play App Signing/secret manager + vérification | Ouvert P0 |
 | R-022 | `targetSdk 34` incompatible publication Play | 20 | CTO | 0 | migration API 36 + matrice Android 15/16 | Ouvert P0 |

@@ -1,8 +1,8 @@
 # VOXIA — fonctions réelles
 
 **Statut :** inventaire factuel autoritaire
-**Dernière vérification :** 26 août 2026
-**Commit applicatif de référence :** `e03691b`
+**Dernière vérification :** 27 août 2026
+**Commit applicatif de référence :** `7689eeb`
 **Version source :** `0.1.1-alpha-internal`
 
 Statuts :
@@ -39,7 +39,7 @@ Statuts :
 | Export | Copier/partager OCR | Partiel | Oui | avertissement + confirmation/chooser | presse-papiers et application cible hors contrôle |
 | Permissions | Explication avant demande | Partiel | Oui | rationales + file d'actions testée | parcours refus/retour non instrumentés |
 | Accessibilité | Contraste et cibles | Fonctionnel statique | Oui | contrastes explicites AAA, boutons 56–72 dp | thème/focus runtime non mesurés |
-| Accessibilité | TalkBack et statuts | Partiel | Oui | propriétaire d'annonce explicite + fallback TTS + tests | absence de double parole non encore prouvée sur téléphone réel |
+| Accessibilité | TalkBack et statuts | Partiel | Oui | propriétaire d'annonce explicite + politiques testées + FIELD-015/FIELD-029 | validé sur un Xiaomi Android 15 uniquement ; appels, notifications, musique et traitements longs non validés |
 | Accessibilité | Police 200 % | Partiel | Oui | tailles `sp`, hauteurs adaptatives | grille à trois colonnes non testée |
 | Accessibilité | Haptique | Absent | Oui | permission déclarée seulement | aucune utilisation dans le code |
 
@@ -60,7 +60,7 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 2. Les sorties terminales STT vide, TTS en erreur et OCR à l'initialisation sont corrigées en JVM ; les timeouts globaux restent incomplets.
 3. La politique FR-only élimine la divergence connue, mais le comportement moteur doit encore être validé sur appareil.
 4. Confirmations et contacts disposent maintenant de jetons, délais et désambiguïsation, mais le parcours doit être validé sur appareil avec carnet réel.
-5. La duplication connue TalkBack/TTS est supprimée dans le code ; le scénario FIELD-029 et les interruptions audio restent à valider sur téléphone réel.
+5. L'absence de double parole et l'annulation STT avec TalkBack sont prouvées par FIELD-029 sur un Xiaomi Android 15 ; appels, notifications, musique et autres appareils restent à valider.
 6. OkHttp/Okio transitifs comportent des avis de sécurité à neutraliser et vérifier.
 7. `targetSdk 34` ne satisfait pas l'exigence Play applicable aux nouvelles versions à partir du 31 août 2026.
 
@@ -68,16 +68,16 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 82 cas distincts, 164 exécutions, 0 échec, 0 ignoré |
+| `gradlew test` | succès, 91 cas distincts, 182 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK courant 118 527 551 octets |
-| `gradlew assembleRelease` | lot précédent uniquement : APK signé v2 de 103 394 179 octets, non reconstruit pour `e03691b` |
-| `gradlew bundleRelease` | lot précédent uniquement : AAB 47 558 559 octets, non reconstruit pour `e03691b` |
+| `gradlew assembleDebug` | succès, APK courant 118 543 935 octets |
+| `gradlew assembleRelease` | lot précédent uniquement : APK signé v2 de 103 394 179 octets, non reconstruit pour `7689eeb` |
+| `gradlew bundleRelease` | lot précédent uniquement : AAB 47 558 559 octets, non reconstruit pour `7689eeb` |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |
 | Évaluateurs Intent/STT/OCR | exécutables, mais seulement sur un exemple factice chacun |
 | Tests instrumentés Android | absents |
-| Checklist téléphone | 2/30 passés ; 28 non exécutés |
+| Checklist téléphone | 4/30 passés ; 26 non exécutés |
 
 Les tailles varient selon le build ; le manifest de chaque future release doit contenir commit, hash, signature et taille réels.
 

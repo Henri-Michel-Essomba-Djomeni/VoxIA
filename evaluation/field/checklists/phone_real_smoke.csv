@@ -13,7 +13,7 @@ FIELD-011,G4,privacy,real_phone_required,"Texte OCR récent","Copier","Avertisse
 FIELD-012,G4,privacy,real_phone_required,"Texte OCR récent","Partager","Avertissement avant chooser Android",,not_run,
 FIELD-013,G3,product,real_phone_required,"Code absent du catalogue","Scanner produit","Produit inconnu ; aucune donnée inventée",,not_run,
 FIELD-014,G3,financial_safety,real_phone_required,"Image non sensible évoquant argent","Identifier","Aucune valeur ni authenticité annoncée",,not_run,
-FIELD-015,G4,accessibility,real_phone_required,"TalkBack activé","Parcourir les contrôles","Contrôles atteignables, nommés et ordonnés",,not_run,
+FIELD-015,G4,accessibility,real_phone_required,"TalkBack activé","Parcourir les contrôles","Contrôles atteignables, nommés et ordonnés","evaluation/field/summaries/2026-08-27-xiaomi-android15-talkback.md",pass,"TalkBack niveau faible ; contrôles nommés et focalisables sur Xiaomi Android 15"
 FIELD-016,G4,accessibility,real_phone_required,"Police 200 % et affichage maximal","Parcourir l'écran","Aucune troncature, superposition ou perte de contrôle",,not_run,
 FIELD-017,G3,stt,real_phone_required,"Environnement calme","Dire une commande simple","Transcription/intention correcte ou erreur sûre","evaluation/field/summaries/2026-08-26-xiaomi-android15-session-01.md",pass,"Commande horaire reconnue ; réponse unique ; aucun callback STT tardif"
 FIELD-018,G3,stt,real_phone_required,"Bruit modéré","Répéter la commande","Échec compréhensible ; aucune action sensible erronée",,not_run,
@@ -27,5 +27,5 @@ FIELD-025,G2,recovery,real_phone_required,"Moteur TTS indisponible/erreur simul�
 FIELD-026,G2,confirmation,real_phone_required,"Action sensible en attente","Attendre expiration puis dire oui","Action expirée et non exécutée",,not_run,
 FIELD-027,G2,contacts,real_phone_required,"Deux contacts de noms proches","Demander un appel ambigu","Désambiguïsation avant composeur",,not_run,
 FIELD-028,G4,language,real_phone_required,"Français puis anglais","Changer de langue et agir","UI, badge, STT, TTS et réponse restent cohérents",,not_run,
-FIELD-029,G4,audio_accessibility,real_phone_required,"TalkBack actif","Déclencher réponse VOXIA","Aucune double parole ; annulation/pause accessibles",,not_run,
+FIELD-029,G4,audio_accessibility,real_phone_required,"TalkBack actif","Déclencher réponse VOXIA","Aucune double parole ; annulation/pause accessibles","evaluation/field/summaries/2026-08-27-xiaomi-android15-talkback.md",pass,"Réponse horaire unique ; annulation STT accessible et erreurs tardives supprimées"
 FIELD-030,G4,layout,real_phone_required,"Police 200 %, portrait/paysage","Tourner et parcourir","Focus conservé ; aucun contrôle masqué",,not_run,

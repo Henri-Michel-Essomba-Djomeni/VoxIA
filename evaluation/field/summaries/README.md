@@ -13,3 +13,4 @@ Chaque synthèse doit indiquer au minimum :
 ## Sessions disponibles
 
 - [2026-08-26 — Xiaomi Android 15 — session 01](2026-08-26-xiaomi-android15-session-01.md) : FIELD-001 et FIELD-017 passés ; 28 scénarios restent à exécuter.
+- [2026-08-27 — Xiaomi Android 15 — TalkBack](2026-08-27-xiaomi-android15-talkback.md) : FIELD-015 et FIELD-029 passés ; cumul de 4 scénarios passés et 26 non exécutés.

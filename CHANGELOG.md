@@ -25,21 +25,22 @@ Format : Added, Changed, Fixed, Security, Verification et Known limitations.
 - Les réponses VOXIA ont désormais un propriétaire vocal unique : le TTS parle, tandis que TalkBack annonce uniquement les états utiles et les retours UI non vocalisés.
 - Le TTS acquiert et libère un focus audio transitoire, s'interrompt proprement lors d'une perte de focus et ignore les callbacks devenus obsolètes après arrêt.
 - Un refus de focus ou une erreur moteur ne déclenche plus le callback de succès ; le prompt vocal revient à l'état prêt sans ouvrir le microphone et les réponses échouées sont rendues à TalkBack.
+- Sur le parcours horaire vérifié, l'annonce TalkBack brève de l'état `PROCESSING` ne coupe plus la réponse VOXIA : elle est différée, annulable et protégée contre les callbacks obsolètes, tandis que les véritables concurrences vocales restent interruptives.
 
 ### Verification
 
-- Baseline documentaire publiée sur `main` au commit `9ef1ac549099ef1a03f97d7606e3dc98531b52a2` ; lots techniques vérifiés aux commits `ff300c1`, `6047ea1`, `84d2389` et `f4777f0`.
-- 76 tests unitaires distincts réussis sur debug et release, soit 152 exécutions, sans échec ni test ignoré.
+- Baseline documentaire publiée sur `main` au commit `9ef1ac549099ef1a03f97d7606e3dc98531b52a2` ; lots techniques vérifiés jusqu'au commit `7689eeb`.
+- 91 tests unitaires distincts réussis sur debug et release, soit 182 exécutions, sans échec ni test ignoré.
 - Android Lint : 0 erreur, 12 avertissements de versions.
-- APK debug courant construit localement (118 527 551 octets) ; la preuve release signée reste celle du lot précédent.
+- APK debug courant construit et installé pour la session TalkBack (118 543 935 octets) ; la preuve release signée reste celle du lot précédent.
 - APK release `0.1.1-alpha-internal` : 103 394 179 octets, SHA-256 `9CBF21956FA139132089347D172F501613BA0917CA6BA73E70A48FC12330F07B`.
 - Test Vision Python : 14 réussites, 10 tests ignorés et 1 échec faute de modèle YOLO.
 
 ### Known limitations
 
 - Aucun test Android instrumenté.
-- 0 scénario terrain exécuté sur 30.
-- TalkBack, police 200 %, mode avion et performances non validés sur téléphone.
+- 4 scénarios terrain passés sur 30 ; aucun échec enregistré et 26 scénarios non exécutés.
+- FIELD-015 et FIELD-029 sont passés sur un Xiaomi Android 15 uniquement ; traitements longs, interruptions externes, police 200 %, mode avion, caméra et performances restent non validés.
 - Plusieurs problèmes P0 de cycle de vie, accessibilité, dépendances et release restent ouverts dans le registre des risques.
 
 ## [0.1.0-alpha-internal] — 2026-07-22
