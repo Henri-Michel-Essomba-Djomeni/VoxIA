@@ -2,7 +2,7 @@
 
 **Statut :** inventaire factuel autoritaire
 **Dernière vérification :** 26 août 2026
-**Commit applicatif de référence :** `f4777f0`
+**Commit applicatif de référence :** `e03691b`
 **Version source :** `0.1.1-alpha-internal`
 
 Statuts :
@@ -17,7 +17,7 @@ Statuts :
 
 | Domaine | Fonction | Statut | Offline | Preuve actuelle | Limite principale |
 |---|---|---|---|---|---|
-| Voix | Écoute ponctuelle FR | Partiel | Conditionnel | politique FR-only + Android `SpeechRecognizer` + tests | fournisseur système possiblement réseau ; aucun test appareil |
+| Voix | Écoute ponctuelle FR | Partiel | Conditionnel | politique FR-only + Android `SpeechRecognizer` + tests + FIELD-017 | une commande horaire en environnement calme sur un Xiaomi Android 15 ; repli système possiblement réseau, bruit et hors-ligne non validés |
 | Voix | Synthèse vocale FR | Partiel | Conditionnel | politique FR-only + focus audio + tests de politiques | dépend du moteur/pack ; validation appareil requise |
 | Voix | Anglais | Absent V0 | Non | demande explicitement refusée sans mutation | localisation complète reportée après V0 offline |
 | Voix | Wake word | Absent | Non | stub retournant toujours faux | aucun modèle livré |
@@ -34,7 +34,7 @@ Statuts :
 | Actions | Appel via composeur | Partiel | Oui | choix explicite + confirmation expirante + 14 tests | validation contacts/appareil réelle absente |
 | Actions | Ouvrir application | Partiel | Oui | launcher Android + confirmation | correspondance approximative |
 | Actions | Alarmes/minuteurs | Partiel | Oui | intents Android + confirmation | dépend de l'application système |
-| Actions | Volume/date/heure/batterie | Fonctionnel code | Oui | API Android | non validé dans une campagne appareil |
+| Actions | Volume/date/heure/batterie | Fonctionnel code | Oui | API Android + heure validée par FIELD-017 | seule l'heure est validée sur un Xiaomi Android 15 ; volume, date et batterie restent sans preuve appareil |
 | Actions | Notifications | Partiel | Oui | listener système | 30 éléments en RAM sans TTL/purge ; lecture sensible |
 | Export | Copier/partager OCR | Partiel | Oui | avertissement + confirmation/chooser | presse-papiers et application cible hors contrôle |
 | Permissions | Explication avant demande | Partiel | Oui | rationales + file d'actions testée | parcours refus/retour non instrumentés |
@@ -68,16 +68,16 @@ L'absence de backend réduit la surface d'attaque mais ne prouve pas un fonction
 
 | Vérification | Résultat |
 |---|---|
-| `gradlew test` | succès, 76 cas distincts, 152 exécutions, 0 échec, 0 ignoré |
+| `gradlew test` | succès, 82 cas distincts, 164 exécutions, 0 échec, 0 ignoré |
 | `gradlew lintDebug` | succès, 0 erreur, 12 avertissements GradleDependency |
-| `gradlew assembleDebug` | succès, APK 118 527 551 octets |
-| `gradlew assembleRelease` | lot précédent uniquement : APK signé v2 de 103 394 179 octets, non reconstruit depuis `f4777f0` |
-| `gradlew bundleRelease` | lot précédent uniquement : AAB 47 558 559 octets, non reconstruit depuis `f4777f0` |
+| `gradlew assembleDebug` | succès, APK courant 118 527 551 octets |
+| `gradlew assembleRelease` | lot précédent uniquement : APK signé v2 de 103 394 179 octets, non reconstruit pour `e03691b` |
+| `gradlew bundleRelease` | lot précédent uniquement : AAB 47 558 559 octets, non reconstruit pour `e03691b` |
 | Import FLEURS | 2/2 tests réussis |
 | Test Vision Python | 14 pass, 10 skipped, 1 fail |
 | Évaluateurs Intent/STT/OCR | exécutables, mais seulement sur un exemple factice chacun |
 | Tests instrumentés Android | absents |
-| Checklist téléphone | 0/30 exécuté |
+| Checklist téléphone | 2/30 passés ; 28 non exécutés |
 
 Les tailles varient selon le build ; le manifest de chaque future release doit contenir commit, hash, signature et taille réels.
 

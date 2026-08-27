@@ -11,9 +11,9 @@ Le dépôt contient aujourd'hui un **prototype interne**, pas une version publiq
 - Vision : OCR latin, étiquetage générique et codes-barres ML Kit ; aucun modèle YOLO VOXIA embarqué.
 - Intentions : règles Kotlin locales ; aucun classifieur TFLite livré.
 - Produit : pipeline code-barres présent, mais catalogue local vide hors en-tête.
-- Vérification locale : 76 tests unitaires distincts réussis sur debug et release, lint sans erreur et APK debug construit depuis la source courante.
+- Vérification locale : 82 tests unitaires distincts réussis sur debug et release (164 exécutions), lint sans erreur et APK debug construit depuis la source courante.
 - Étape 0 en cours : P0-002, P0-004, P0-005 et P0-006 sont implémentés côté code ; P0-003 reste en validation avec des timeouts globaux incomplets. Les preuves appareil applicables restent obligatoires.
-- Validation terrain : 0 scénario sur 30 exécuté ; TalkBack, caméra, microphone, permissions, mode avion et performances restent à valider sur téléphone réel.
+- Validation terrain : 2 scénarios sur 30 passés sur Xiaomi Android 15 (installation et commande vocale simple) ; TalkBack, caméra, permissions détaillées, mode avion et performances restent à valider sur téléphone réel.
 - Décision de diffusion : **NO-GO public** jusqu'au franchissement des gates du plan directeur.
 
 ## Objectif de la version hors ligne

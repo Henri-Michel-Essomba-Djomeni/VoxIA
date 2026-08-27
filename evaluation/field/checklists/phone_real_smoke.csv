@@ -1,5 +1,5 @@
 case_id,gate,area,execution_surface,setup,action,expected_result,evidence,status,notes
-FIELD-001,G5,installation,real_phone_required,"Téléphone Android ARM64 branché, APK disponible","Installer puis ouvrir","Installation réussie, lancement sans crash, version/hash conformes",,not_run,
+FIELD-001,G5,installation,real_phone_required,"Téléphone Android ARM64 branché, APK disponible","Installer puis ouvrir","Installation réussie, lancement sans crash, version/hash conformes","evaluation/field/summaries/2026-08-26-xiaomi-android15-session-01.md",pass,"Xiaomi Android 15 ; commit e03691b ; APK debug"
 FIELD-002,G4,permissions,emulator_ok_first_pass,"Installation fraîche, permissions révoquées","Premier lancement","Microphone expliqué avant la demande système",,not_run,
 FIELD-003,G4,permissions,real_phone_required,"Dialogue microphone visible","Refuser le microphone","Aucun crash ; fonctions tactiles/caméra restent utilisables",,not_run,
 FIELD-004,G4,permissions,real_phone_required,"Microphone refusé puis redemandé","Accorder le microphone","Commande vocale manuelle disponible",,not_run,
@@ -15,7 +15,7 @@ FIELD-013,G3,product,real_phone_required,"Code absent du catalogue","Scanner pro
 FIELD-014,G3,financial_safety,real_phone_required,"Image non sensible évoquant argent","Identifier","Aucune valeur ni authenticité annoncée",,not_run,
 FIELD-015,G4,accessibility,real_phone_required,"TalkBack activé","Parcourir les contrôles","Contrôles atteignables, nommés et ordonnés",,not_run,
 FIELD-016,G4,accessibility,real_phone_required,"Police 200 % et affichage maximal","Parcourir l'écran","Aucune troncature, superposition ou perte de contrôle",,not_run,
-FIELD-017,G3,stt,real_phone_required,"Environnement calme","Dire une commande simple","Transcription/intention correcte ou erreur sûre",,not_run,
+FIELD-017,G3,stt,real_phone_required,"Environnement calme","Dire une commande simple","Transcription/intention correcte ou erreur sûre","evaluation/field/summaries/2026-08-26-xiaomi-android15-session-01.md",pass,"Commande horaire reconnue ; réponse unique ; aucun callback STT tardif"
 FIELD-018,G3,stt,real_phone_required,"Bruit modéré","Répéter la commande","Échec compréhensible ; aucune action sensible erronée",,not_run,
 FIELD-019,G4,actions,real_phone_required,"Contact test, permission absente","Demander un appel","Permission/confirmation sans appel direct",,not_run,
 FIELD-020,G5,logs,real_phone_required,"Session complète","Examiner logcat release","Aucun contenu utilisateur sensible",,not_run,
