@@ -1,8 +1,16 @@
 package com.voxia.ui
 
+import com.voxia.speech.SpeechState
+
 internal enum class ResponseOrigin {
     ASSISTANT_SPEECH,
     LOCAL_UI
+}
+
+internal enum class StateAnnouncementTiming {
+    IMMEDIATE,
+    DELAYED,
+    NONE
 }
 
 /**
@@ -16,5 +24,12 @@ internal object AccessibilityAnnouncementPolicy {
 
     fun shouldAnnounce(origin: ResponseOrigin): Boolean = origin == ResponseOrigin.LOCAL_UI
 
-    fun shouldAnnounceState(isAssistantSpeaking: Boolean): Boolean = !isAssistantSpeaking
+    fun stateAnnouncementTiming(state: SpeechState?): StateAnnouncementTiming = when (state) {
+        SpeechState.IDLE,
+        SpeechState.LISTENING -> StateAnnouncementTiming.IMMEDIATE
+
+        SpeechState.PROCESSING -> StateAnnouncementTiming.DELAYED
+        SpeechState.SPEAKING,
+        null -> StateAnnouncementTiming.NONE
+    }
 }

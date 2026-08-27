@@ -1,5 +1,7 @@
 package com.voxia.ui
 
+import com.voxia.speech.SpeechState
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,12 +32,38 @@ class AccessibilityAnnouncementPolicyTest {
     }
 
     @Test
-    fun listeningState_isAnnouncedForAccessibility() {
-        assertTrue(AccessibilityAnnouncementPolicy.shouldAnnounceState(isAssistantSpeaking = false))
+    fun idleAndListeningStates_areAnnouncedImmediately() {
+        assertEquals(
+            StateAnnouncementTiming.IMMEDIATE,
+            AccessibilityAnnouncementPolicy.stateAnnouncementTiming(SpeechState.IDLE)
+        )
+        assertEquals(
+            StateAnnouncementTiming.IMMEDIATE,
+            AccessibilityAnnouncementPolicy.stateAnnouncementTiming(SpeechState.LISTENING)
+        )
+    }
+
+    @Test
+    fun processingState_isDelayedToAvoidCompetingWithImmediateResponse() {
+        assertEquals(
+            StateAnnouncementTiming.DELAYED,
+            AccessibilityAnnouncementPolicy.stateAnnouncementTiming(SpeechState.PROCESSING)
+        )
     }
 
     @Test
     fun speakingState_doesNotCompeteWithAssistantSpeech() {
-        assertFalse(AccessibilityAnnouncementPolicy.shouldAnnounceState(isAssistantSpeaking = true))
+        assertEquals(
+            StateAnnouncementTiming.NONE,
+            AccessibilityAnnouncementPolicy.stateAnnouncementTiming(SpeechState.SPEAKING)
+        )
+    }
+
+    @Test
+    fun unknownState_isNotAnnouncedAsReady() {
+        assertEquals(
+            StateAnnouncementTiming.NONE,
+            AccessibilityAnnouncementPolicy.stateAnnouncementTiming(null)
+        )
     }
 }

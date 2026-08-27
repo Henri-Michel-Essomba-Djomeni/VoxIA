@@ -8,6 +8,23 @@ import org.junit.Test
 class AudioFocusSessionTest {
 
     @Test
+    fun ducking_interruptsSpeechToPreventConcurrentVoices() {
+        assertTrue(AudioFocusInterruptionPolicy.shouldInterrupt(AudioFocusEvent.DUCK))
+    }
+
+    @Test
+    fun permanentAndTransientLoss_interruptSpeech() {
+        assertTrue(AudioFocusInterruptionPolicy.shouldInterrupt(AudioFocusEvent.LOSS))
+        assertTrue(AudioFocusInterruptionPolicy.shouldInterrupt(AudioFocusEvent.TRANSIENT_LOSS))
+    }
+
+    @Test
+    fun gainAndUnknownEvents_doNotInterruptSpeech() {
+        assertFalse(AudioFocusInterruptionPolicy.shouldInterrupt(AudioFocusEvent.GAIN))
+        assertFalse(AudioFocusInterruptionPolicy.shouldInterrupt(AudioFocusEvent.UNKNOWN))
+    }
+
+    @Test
     fun acquire_reusesHeldFocusUntilRelease() {
         var requests = 0
         var abandons = 0

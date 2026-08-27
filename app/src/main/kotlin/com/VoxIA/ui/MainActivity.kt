@@ -21,8 +21,13 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import com.voxia.assistant.R
 import com.voxia.assistant.VoiceAssistantService
+import com.voxia.speech.SpeechState
 
 class MainActivity : AppCompatActivity() {
+    companion object {
+        private const val PROCESSING_ANNOUNCEMENT_DELAY_MS = 500L
+    }
+
     private lateinit var previewView: PreviewView
     private lateinit var stateText: TextView
     private lateinit var transcriptText: TextView
@@ -35,6 +40,12 @@ class MainActivity : AppCompatActivity() {
     private val pendingServiceActions = PendingActionQueue<VoiceAssistantService>()
     private var listenAfterAudioPermission = false
     private var notificationPermissionPromptedThisSession = false
+    private val delayedStateAnnouncement by lazy {
+        DelayedAnnouncementCoordinator(
+            schedule = { task, delayMillis -> stateText.postDelayed(task, delayMillis) },
+            unschedule = stateText::removeCallbacks
+        )
+    }
 
     private val audioPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) {
@@ -194,6 +205,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
+        delayedStateAnnouncement.cancel()
         if (receiverRegistered) {
             unregisterReceiver(eventReceiver)
             receiverRegistered = false
@@ -329,18 +341,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun localizedState(state: String): String = when (state) {
-        "LISTENING" -> getString(R.string.state_listening)
-        "PROCESSING" -> getString(R.string.state_processing)
-        "SPEAKING" -> getString(R.string.state_speaking)
-        else -> getString(R.string.state_idle)
+    private fun localizedState(state: SpeechState): String = when (state) {
+        SpeechState.LISTENING -> getString(R.string.state_listening)
+        SpeechState.PROCESSING -> getString(R.string.state_processing)
+        SpeechState.SPEAKING -> getString(R.string.state_speaking)
+        SpeechState.IDLE -> getString(R.string.state_idle)
     }
 
-    private fun updateState(state: String) {
-        val localizedState = localizedState(state)
+    private fun updateState(rawState: String) {
+        val state = SpeechState.entries.firstOrNull { it.name == rawState }
+        val localizedState = localizedState(state ?: SpeechState.IDLE)
         stateText.text = localizedState
-        if (AccessibilityAnnouncementPolicy.shouldAnnounceState(state == "SPEAKING")) {
-            stateText.announceForAccessibility(localizedState)
+        delayedStateAnnouncement.cancel()
+        when (AccessibilityAnnouncementPolicy.stateAnnouncementTiming(state)) {
+            StateAnnouncementTiming.IMMEDIATE ->
+                stateText.announceForAccessibility(localizedState)
+
+            StateAnnouncementTiming.DELAYED -> {
+                delayedStateAnnouncement.replace(PROCESSING_ANNOUNCEMENT_DELAY_MS) {
+                    if (stateText.text == localizedState) {
+                        stateText.announceForAccessibility(localizedState)
+                    }
+                }
+            }
+
+            StateAnnouncementTiming.NONE -> Unit
         }
     }
 

@@ -1,5 +1,25 @@
 package com.voxia.speech
 
+internal enum class AudioFocusEvent {
+    GAIN,
+    LOSS,
+    TRANSIENT_LOSS,
+    DUCK,
+    UNKNOWN
+}
+
+/** Prevents concurrent spoken audio while preserving non-terminal gain events. */
+internal object AudioFocusInterruptionPolicy {
+    fun shouldInterrupt(event: AudioFocusEvent): Boolean = when (event) {
+        AudioFocusEvent.LOSS,
+        AudioFocusEvent.TRANSIENT_LOSS,
+        AudioFocusEvent.DUCK -> true
+
+        AudioFocusEvent.GAIN,
+        AudioFocusEvent.UNKNOWN -> false
+    }
+}
+
 /**
  * Tracks one transient audio-focus lease for a sequence of spoken messages.
  *

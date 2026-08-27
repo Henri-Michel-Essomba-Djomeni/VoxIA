@@ -7,6 +7,8 @@ import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import com.voxia.language.OfflineLanguagePolicy
+import com.voxia.speech.AudioFocusEvent
+import com.voxia.speech.AudioFocusInterruptionPolicy
 import com.voxia.speech.AudioFocusSession
 import com.voxia.speech.stt.SpeechLanguage
 import com.voxia.utils.PrivacyLog
@@ -73,10 +75,15 @@ class TTSService(private val context: Context) {
         .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
         .build()
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { change ->
-        when (change) {
-            AudioManager.AUDIOFOCUS_LOSS,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT,
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> interruptForAudioFocusLoss()
+        val event = when (change) {
+            AudioManager.AUDIOFOCUS_GAIN -> AudioFocusEvent.GAIN
+            AudioManager.AUDIOFOCUS_LOSS -> AudioFocusEvent.LOSS
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> AudioFocusEvent.TRANSIENT_LOSS
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> AudioFocusEvent.DUCK
+            else -> AudioFocusEvent.UNKNOWN
+        }
+        if (AudioFocusInterruptionPolicy.shouldInterrupt(event)) {
+            interruptForAudioFocusLoss()
         }
     }
     private val audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
